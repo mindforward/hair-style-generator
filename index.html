@@ -677,8 +677,6 @@ body {
   let generatedImageDataUrl=null;
 
   generateBtn.addEventListener('click',async function(){
-    const key = window._apiKey || savedApiKey;
-    if(!key){ alert(txt('noKeyAlert')); return; }
     if(!capturedDataUrl){ alert('Please take a photo first'); goStep(2); return; }
 
     generateBtn.disabled=true; generateBtn.textContent='⏳ 生成中...';
@@ -688,55 +686,26 @@ body {
     const b64=capturedDataUrl.split(',')[1];
 
     try{
-      // ---- Gemini 3.1 Flash Image (Interactions API) ----
-      const body={
-        model:"gemini-3.1-flash-image",
-        input:[
-          {type:"text", text:prompt},
-          {type:"image", data:b64, mime_type:"image/jpeg"}
-        ]
-      };
-
-      const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{
+      // ---- Call backend API (Vercel serverless, no regional restrictions) ----
+      const resp=await fetch('/api/generate',{
         method:'POST',
-        headers:{'x-goog-api-key':key, 'Content-Type':'application/json'},
-        body:JSON.stringify(body)
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({prompt, image:b64})
       });
       const data=await resp.json();
-      if(!resp.ok) throw new Error(data.error?.message||'Gemini error '+resp.status);
+      if(!resp.ok) throw new Error(data.error||'Server error '+resp.status);
 
-      // Extract image from response steps
-      let imgUrl=null;
-      if(data.steps){
-        for(const step of data.steps){
-          if(step.type==='model_output' && step.content){
-            for(const item of step.content){
-              if(item.type==='image' && item.data){
-                imgUrl='data:'+(item.mime_type||'image/png')+';base64,'+item.data;
-                break;
-              }
-            }
-          }
-          if(imgUrl) break;
-        }
-      }
-      // Fallback: try output_image convenience field
-      if(!imgUrl && data.output_image && data.output_image.data){
-        imgUrl='data:'+(data.output_image.mime_type||'image/png')+';base64,'+data.output_image.data;
-      }
+      // Backend returns {data: base64, mime_type: "image/png"}
+      const imgUrl='data:'+(data.mime_type||'image/png')+';base64,'+data.data;
 
-      if(imgUrl){
-        generatedImageDataUrl=imgUrl;
-        placeHolder.style.display='none';
-        const old=resultArea.querySelector('img');
-        if(old) old.remove();
-        const img=document.createElement('img');
-        img.src=imgUrl; img.alt='Generated portrait';
-        resultArea.appendChild(img);
-        toPrintBtn.style.display='inline-block';
-      } else {
-        throw new Error('Model did not return an image');
-      }
+      generatedImageDataUrl=imgUrl;
+      placeHolder.style.display='none';
+      const old=resultArea.querySelector('img');
+      if(old) old.remove();
+      const img=document.createElement('img');
+      img.src=imgUrl; img.alt='Generated portrait';
+      resultArea.appendChild(img);
+      toPrintBtn.style.display='inline-block';
     } catch(e){
       placeHolder.textContent='❌ Error: '+e.message;
     }
