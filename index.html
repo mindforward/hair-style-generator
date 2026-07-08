@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Style → 4R Print</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:Arial,Helvetica,sans-serif;
+  background:#FDB924; min-height:100vh;
+  display:flex; align-items:center; justify-content:center;
+  padding:20px;
+}
+.app-wrapper {
+  max-width:1600px; width:100%;
+  background:white; border-radius:40px 40px 30px 30px;
+  box-shadow:0 25px 40px -10px rgba(0,0,0,0.3);
+  padding:28px 25px 35px; border:2px solid #00ADEF;
+}
+.steps {
+  display:flex; gap:8px; margin-bottom:20px;
+  flex-wrap:wrap; justify-content:center;
+}
+.step {
+  background:#e0e0e0; color:#999; padding:8px 22px;
+  border-radius:50px; font-weight:bold; font-size:1rem;
+  border:2px solid transparent; white-space:nowrap;
+}
+.step.active { background:#00ADEF; color:white; border-color:#FDB924; }
+.step.done { background:#BAC405; color:white; }
+.header-bar {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:18px; flex-wrap:wrap; gap:12px;
+}
+.logo-area { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.logo-svg { height:80px; width:auto; display:flex; align-items:center; }
+.logo-svg svg { height:80px; width:auto; max-width:160px; }
+.logo-area h1 { color:#717073; font-size:1.8rem; font-weight:700; margin:0; white-space:nowrap; }
+.lang-toggle { display:flex; gap:10px; align-items:center; }
+.lang-btn {
+  background:#BAC405; border:none; color:white; font-weight:bold;
+  font-size:1.1rem; padding:6px 18px; border-radius:50px; cursor:pointer;
+  box-shadow:0 3px 0 #8f9c04; transition:0.1s; border:1px solid #ffffff90;
+}
+.lang-btn.active { background:#00ADEF; box-shadow:0 3px 0 #0079a8; }
+.lang-btn:active { transform:translateY(3px); box-shadow:none; }
+.yccampus { font-size:.6em; color:#0072a0; }
+.panel { display:none; }
+.panel.active { display:block; }
+.pools-row {
+  display:flex; gap:18px; overflow-x:auto;
+  padding:8px 5px 15px 5px;
+  scrollbar-width:thin; scrollbar-color:#00ADEF #FDB92430;
+}
+.pools-row::-webkit-scrollbar { height:10px; }
+.pools-row::-webkit-scrollbar-track { background:#f0e5d8; border-radius:20px; }
+.pools-row::-webkit-scrollbar-thumb { background:#00ADEF; border-radius:20px; }
+.pool-card {
+  min-width:500px; max-width:500px;
+  background:#fef8f0; border-radius:40px;
+  padding:15px; box-shadow:0 8px 0 #00ADEF, 0 12px 25px -10px #00000030;
+  border:2px solid #BAC405;
+}
+.pool-header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:12px; padding:0 5px;
+}
+.pool-title { color:#717073; font-weight:800; font-size:1.2rem;
+  background:#FDB92440; padding:3px 15px; border-radius:40px; border:1px solid #00ADEF; }
+.pool-count { background:#00ADEF; color:white; border-radius:30px; padding:2px 15px; font-weight:bold; font-size:0.85rem; }
+.word-canvas.source {
+  background:#fffcf2; border-radius:25px; padding:12px 12px;
+  min-height:110px; border:3px dashed #BAC405;
+  display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center;
+}
+.word-tag {
+  background:white; border-radius:60px; padding:6px 18px;
+  font-size:0.95rem; font-weight:600; color:#717073;
+  box-shadow:0 4px 0 #FDB924, 0 2px 10px rgba(0,0,0,0.05);
+  border:1.5px solid #00ADEF; cursor:grab; transition:0.1s;
+  user-select:none; white-space:nowrap;
+}
+.word-tag:active { cursor:grabbing; transform:scale(0.96); box-shadow:0 1px 0 #FDB924; }
+.selected-section {
+  margin:15px 0 10px; background:#FDB92420;
+  border-radius:40px; padding:15px 25px; border:3px solid #00ADEF;
+}
+.selected-header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:10px; color:#717073; font-weight:bold; font-size:1.1rem;
+}
+.selected-header span:last-child {
+  background:#00ADEF; color:white; padding:3px 18px; border-radius:50px; font-size:0.85rem;
+}
+.destination {
+  background:#fff6e7; border-radius:35px; padding:15px;
+  min-height:80px; border:2px dashed #BAC405;
+  display:flex; flex-wrap:wrap; gap:10px 12px; align-items:center;
+}
+.destination .word-tag {
+  cursor:pointer; background:#ffffff; border:2px solid #00ADEF;
+  box-shadow:0 3px 0 #BAC405; padding-right:36px; position:relative;
+}
+.destination .word-tag::after {
+  content:"✕"; font-size:1.1rem; font-weight:bold; color:#FDB924;
+  position:absolute; right:12px; top:50%; transform:translateY(-50%);
+}
+.destination .word-tag:hover { background:#ffe6d5; }
+.limit-warning { color:#c24a2b; font-weight:bold; font-size:0.9rem; min-height:1.2em; }
+.btn-row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+.btn-row-between { display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:12px; }
+.btn {
+  border:none; color:white; font-family:Arial,sans-serif; font-weight:bold;
+  font-size:1.05rem; padding:10px 28px; border-radius:50px; cursor:pointer;
+  box-shadow:0 5px 0 #0072a0; transition:0.1s; border:1px solid #ffffff90;
+}
+.btn:active { transform:translateY(5px); box-shadow:none; }
+.btn-yellow { background:#FDB924; box-shadow:0 5px 0 #b8861a; }
+.btn-blue { background:#00ADEF; }
+.btn-green { background:#BAC405; box-shadow:0 4px 0 #8a9404; }
+.btn-gray { background:#999; box-shadow:0 4px 0 #666; }
+.btn:disabled { opacity:0.5; cursor:default; transform:none !important; box-shadow:0 5px 0 #0072a0 !important; }
+.camera-panel { text-align:center; padding:20px; }
+#cameraPreview {
+  display:block; width:100%; max-width:480px; height:auto;
+  border-radius:30px; background:#2d3e4e; margin:0 auto;
+  border:4px solid #BAC405; aspect-ratio:4/3; object-fit:cover;
+}
+#capturedPreview {
+  display:none; width:100%; max-width:480px; height:auto;
+  border-radius:30px; margin:0 auto; border:4px solid #00ADEF;
+}
+.camera-controls { display:flex; gap:15px; justify-content:center; flex-wrap:wrap; margin-top:20px; }
+.generate-panel { text-align:center; }
+.result-area {
+  background:#fef8f0; border-radius:30px; padding:20px;
+  border:3px solid #00ADEF; min-height:200px;
+  display:flex; flex-direction:column; align-items:center; gap:15px;
+}
+.result-area img { max-width:100%; max-height:500px; border-radius:20px; box-shadow:0 10px 20px -5px #00000040; }
+.result-area .placeholder { color:#999; font-size:1.2rem; padding:60px 20px; }
+.print-panel { text-align:center; }
+.print-canvas-area {
+  background:#BAC405; border-radius:28px; padding:1.5rem;
+  box-shadow:inset 0 5px 10px #A3B004,0 12px 20px -10px #3f3f1a;
+  margin-bottom:1.5rem; border:1px solid #FDB924; display:inline-block;
+}
+#printCanvas { border-radius:16px; background:#fff; border:2px solid #FDB924; width:300px; height:450px; }
+.footer-note { color:#717073; margin-top:15px; font-size:0.9rem; }
+.prompt-box {
+  background:#ffffff; border-radius:25px; padding:12px 20px;
+  border:3px solid #00ADEF; box-shadow:inset 0 2px 6px #FDB92460;
+  font-size:0.95rem; line-height:1.5; color:#717073;
+  margin:10px 0; text-align:left;
+}
+.prompt-box em { background:#BAC40540; font-style:italic; font-weight:bold; padding:2px 7px; border-radius:30px; border:1px solid #00ADEF; color:#2c2c2c; }
+.loading-spinner { display:inline-block; width:40px; height:40px; border:5px solid #e0e0e0; border-top:5px solid #00ADEF; border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.status-msg { color:#717073; font-size:0.95rem; margin:8px 0; }
+.section-title { color:#717073; font-size:1.3rem; font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:10px; }
+
+/* ---- Settings gear / modal ---- */
+.settings-btn {
+  background:none; border:none; font-size:1.6rem; cursor:pointer;
+  color:#717073; padding:4px; transition:0.1s;
+  vertical-align:middle; line-height:1;
+}
+.settings-btn:hover { color:#00ADEF; transform:rotate(30deg); }
+.modal-overlay {
+  display:none; position:fixed; z-index:1000; left:0; top:0;
+  width:100%; height:100%; background:rgba(0,0,0,0.6);
+  align-items:center; justify-content:center;
+}
+.modal-box {
+  background:white; border-radius:40px; padding:30px; max-width:500px;
+  width:90%; box-shadow:0 25px 40px rgba(0,0,0,0.4);
+  border:4px solid #00ADEF; position:relative;
+}
+.modal-close {
+  position:absolute; top:18px; right:22px; font-size:2.5rem;
+  font-weight:bold; color:#717073; cursor:pointer; line-height:1;
+}
+.modal-close:hover { color:#00ADEF; }
+.modal-title { color:#717073; font-size:1.5rem; font-weight:700; margin-bottom:20px; padding-right:30px; }
+.modal-body { display:flex; flex-direction:column; gap:18px; }
+.modal-body label { font-weight:bold; color:#717073; font-size:1rem; }
+.modal-body input[type="password"] {
+  width:100%; padding:10px 18px; border-radius:30px; border:2px solid #00ADEF;
+  font-size:1rem; font-family:monospace;
+}
+.modal-body .hint { color:#999; font-size:0.85rem; }
+.modal-body .save-btn { align-self:flex-end; }
+
+/* api status indicator */
+.api-indicator {
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:0.85rem; color:#717073; background:#f0f0f0;
+  padding:4px 14px; border-radius:30px; margin-left:8px;
+}
+.api-indicator.ok { background:#BAC40540; color:#5a7a00; }
+.api-indicator.missing { background:#fdd; color:#a33; }
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+  <!-- Steps -->
+  <div class="steps">
+    <span class="step active" id="step1">1️⃣ 揀風格</span>
+    <span class="step" id="step2">2️⃣ 影相</span>
+    <span class="step" id="step3">3️⃣ AI 生成</span>
+    <span class="step" id="step4">4️⃣ 打印</span>
+  </div>
+
+  <!-- Header -->
+  <div class="header-bar">
+    <div class="logo-area">
+      <div class="logo-svg">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="200 0 600 200" style="height:80px;width:auto;">
+          <g transform="translate(16933.158 2101.316)">
+            <path d="M-16548.363-1849.328h959.406v46h-959.406Z" transform="translate(-384.795 0.328)" fill="#fff"/>
+            <g transform="translate(-16570.836 -2101.316)">
+              <path d="M57.107,82.26a24.877,24.877,0,1,0,24.877,24.877A24.877,24.877,0,0,0,57.107,82.26m12.915,24.877A12.833,12.833,0,1,1,57.175,94.3a12.833,12.833,0,0,1,12.847,12.833" transform="translate(11.632 29.687)" fill="#b2d235"/>
+              <path d="M57.1,41.13A24.864,24.864,0,1,0,81.977,66,24.864,24.864,0,0,0,57.1,41.13M70.015,65.994A12.833,12.833,0,1,1,57.1,53.2,12.833,12.833,0,0,1,70.015,65.994" transform="translate(11.639 14.844)" fill="#00aeef"/>
+              <path d="M57.1,0A24.864,24.864,0,1,0,81.977,24.873,24.864,24.864,0,0,0,57.1,0M70.015,24.877a12.833,12.833,0,1,1-3.759-9.088,12.833,12.833,0,0,1,3.759,9.088" transform="translate(11.639 0)" fill="#faa61a"/>
+              <path d="M113.614,70.1V42.26h-12V71.206a8.342,8.342,0,0,1-16.644,0V42.26H72.91V70.1a20.413,20.413,0,0,0,40.7,0" transform="translate(26.313 15.251)" fill="#414042"/>
+              <path d="M162.7,60.36V42.26h12.126V88.912H162.7V70.8H145.182V88.912H133.07V42.26h12.112v18.1Z" transform="translate(48.024 15.251)" fill="#414042"/>
+              <path d="M128.272,88.912H116.146V52.535H106.13V42.26h32.158V52.535H128.272Z" transform="translate(38.302 15.251)" fill="#414042"/>
+              <path d="M0,42.26H14.534l8.723,12.7,8.723-12.7H46.515L29.327,66.511v22.4H17.188v-22.4Z" transform="translate(0 15.251)" fill="#414042"/>
+              <path d="M176.638,100.079l9.867-6.315a24.9,24.9,0,1,0,3.525,9.05h-24.5v8.642h12.411a13.16,13.16,0,1,1-1.361-11.391" transform="translate(50.741 29.682)" fill="#414042"/>
+              <path d="M25.015,120.009a12.847,12.847,0,1,1,9.064-21.924l8.506-8.546a24.891,24.891,0,1,0,0,35.234l-8.506-8.519a12.793,12.793,0,0,1-9.064,3.756" transform="translate(0.039 29.689)" fill="#414042"/>
+              <path d="M192.626,93.671v8.315h12.561v9.5H192.626v8.3h14.412v10.261H180.5V83.41h26.538V93.671Z" transform="translate(65.142 30.102)" fill="#414042"/>
+              <path d="M130.812,93.671v8.315h12.575v9.5H130.812v8.3h14.412v10.261H118.7V83.41h26.524V93.671Z" transform="translate(42.838 30.102)" fill="#414042"/>
+              <path d="M107.936,119.787h14.548v10.261H95.81V83.41h12.126Z" transform="translate(34.577 30.102)" fill="#414042"/>
+              <path d="M85.036,119.787H99.57v10.261H72.91V83.41H85.036Z" transform="translate(26.313 30.102)" fill="#414042"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <h1>AI 風格大變身</h1>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btnENG">ENG</button>
+      <button class="lang-btn" id="btnCHT">中文</button>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 1: 揀風格 ===== -->
+  <div class="panel active" id="panel1">
+    <div class="section-title">
+      <span id="titleStep1">🎨 揀選風格</span>
+      <span>
+        <button class="settings-btn" id="settingsBtn" title="API Key 設定">⚙️</button>
+        <span id="apiIndicator" style="font-size:0.85rem; color:#999; margin-left:6px;"></span>
+      </span>
+    </div>
+
+    <div class="pools-row" id="poolsRow">
+      <div class="pool-card" data-pool="culture">
+        <div class="pool-header">
+          <span class="pool-title" id="titleCulture">🌍 CULTURE</span>
+          <span class="pool-count">9</span>
+        </div>
+        <div id="sourceCulture" class="word-canvas source"></div>
+      </div>
+      <div class="pool-card" data-pool="aesthetic">
+        <div class="pool-header">
+          <span class="pool-title" id="titleAesthetic">🎨 AESTHETIC</span>
+          <span class="pool-count">9</span>
+        </div>
+        <div id="sourceAesthetic" class="word-canvas source"></div>
+      </div>
+      <div class="pool-card" data-pool="decade">
+        <div class="pool-header">
+          <span class="pool-title" id="titleDecade">📅 DECADE / HISTORIC</span>
+          <span class="pool-count">9</span>
+        </div>
+        <div id="sourceDecade" class="word-canvas source"></div>
+      </div>
+      <div class="pool-card" data-pool="texture">
+        <div class="pool-header">
+          <span class="pool-title" id="titleTexture">🧵 TEXTURE & STRUCTURE</span>
+          <span class="pool-count">9</span>
+        </div>
+        <div id="sourceTexture" class="word-canvas source"></div>
+      </div>
+    </div>
+
+    <!-- Dynamic prompt display (stays in step 1) -->
+    <div class="prompt-box" id="promptDisplay"></div>
+
+    <!-- Selected styles -->
+    <div class="selected-section">
+      <div class="selected-header">
+        <span id="selectedTitle">✨ 已選風格</span>
+        <span><span id="selectedCount">0</span>/5</span>
+      </div>
+      <div id="destinationCanvas" class="destination"></div>
+      <div id="maxWarning" class="limit-warning"></div>
+    </div>
+    <div class="btn-row" style="justify-content:flex-end;">
+      <button class="btn btn-green" id="resetBtn">🗑️ 清除</button>
+      <button class="btn btn-blue" id="toCameraBtn" onclick="window._goToStep2()">📸 下一步：影相 →</button>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 2: 影相 ===== -->
+  <div class="panel" id="panel2">
+    <div class="section-title" id="photoTitle">📸 影相 Selfie</div>
+    <div class="camera-panel">
+      <video id="cameraPreview" autoplay playsinline></video>
+      <canvas id="hiddenCanvas" style="display:none;"></canvas>
+      <img id="capturedPreview">
+      <div class="camera-controls">
+        <button class="btn btn-yellow" id="startCameraBtn">📷 開相機</button>
+        <button class="btn btn-blue" id="captureBtn" disabled>📸 影相！</button>
+        <button class="btn btn-green" id="retakeBtn" style="display:none;">🔄 重新影過</button>
+      </div>
+      <div class="status-msg" id="cameraStatus">按「開相機」啟用鏡頭</div>
+    </div>
+    <div class="btn-row-between">
+      <button class="btn btn-gray" id="backFromCam">← 上一步</button>
+      <button class="btn btn-blue" id="toGeminiBtn" style="display:none;">🤖 下一步：生成 →</button>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 3: AI 生成 ===== -->
+  <div class="panel" id="panel3">
+    <div class="section-title" id="genTitle">🤖 Google Gemini 生成</div>
+    <div class="prompt-box" id="genPromptDisplay" style="margin-bottom:12px;"></div>
+    <div class="result-area" id="resultArea">
+      <div class="placeholder" id="resultPlaceholder">✨ 揀好風格、影完相後，按下面按鈕生成</div>
+    </div>
+    <div class="btn-row-between">
+      <button class="btn btn-gray" id="backFromGen">← 上一步</button>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-yellow" id="generateBtn">🚀 生成圖像</button>
+        <button class="btn btn-blue" id="toPrintBtn" style="display:none;">🖼️ 下一步：打印 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 4: 打印 ===== -->
+  <div class="panel" id="panel4">
+    <div class="section-title" id="printTitle">🖼️ 4R 打印</div>
+    <div style="display:flex; gap:1.5rem; flex-wrap:wrap; justify-content:center; align-items:flex-start;">
+      <div class="print-canvas-area">
+        <canvas id="printCanvas" width="300" height="450"></canvas>
+      </div>
+      <div style="text-align:left; max-width:300px;">
+        <p style="color:#717073; margin-bottom:12px;" id="frameLabel">📂 上傳 4R 相框 (可選):</p>
+        <label class="btn btn-green" style="display:inline-block; font-size:0.9rem; padding:8px 18px; cursor:pointer;">
+          <span id="chooseFrameBtn">揀選相框</span>
+          <input type="file" id="frameFileInput" accept="image/*" style="display:none;">
+        </label>
+        <div id="frameFileName" style="color:#717073; font-size:0.85rem; margin-top:8px; word-break:break-all;">未選取（使用預設外框）</div>
+        <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="btn btn-blue" id="printBtn">🖨️ 打印</button>
+          <button class="btn btn-yellow" id="downloadBtn">⬇️ 下載 PNG</button>
+        </div>
+        <div style="margin-top:16px;">
+          <button class="btn btn-gray" id="backFromPrint">← 上一步</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note" id="footerNote">Designed and Developed by Fred Chung</div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-box" style="max-width:450px;">
+    <span class="modal-close" id="modalClose">&times;</span>
+    <h2 class="modal-title">🔑 Gemini API Key</h2>
+    <div style="display:flex;flex-direction:column;gap:15px;">
+      <p style="color:#717073;font-size:0.95rem;">去 <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00ADEF;">Google AI Studio</a> 免費申請 API Key</p>
+      <input type="password" id="modalApiKey" placeholder="輸入你的 API Key..." style="width:100%;padding:10px 16px;border-radius:30px;border:2px solid #00ADEF;font-size:1rem;font-family:monospace;">
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-green" id="saveKeyBtn">💾 儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const LANG = { eng:0, cht:1 };
+  let currentLang = 'cht';
+  const WORDS = {
+    eng: {
+      culture:["Chinese","Japanese","Korean","American","Brazilian","French","Indian","Italian","Moroccan"],
+      aesthetic:["Grunge","Preppy","Bohemian","Punk","Minimalist","Glamour","K-Pop","Western","Gothic"],
+      decade:["1920s vintage","1970s disco","1990s grunge","Victorian","Rockabilly","Mod","Renaissance","Art Deco","Hippie"],
+      texture:["straight","wavy","curly","sleek","voluminous","textured","braided","ponytail","loose"]
+    },
+    cht: {
+      culture:["中國","日本","韓國","美國","巴西","法國","印度","義大利","摩洛哥"],
+      aesthetic:["頹廢風","學院風","波西米亞","龐克","極簡主義","華麗風","K-Pop","西部風","歌德"],
+      decade:["1920年代復古","1970年代迪斯可","1990年代油漬","維多利亞","搖滾比利","摩德風","文藝復興","裝飾藝術","嬉皮"],
+      texture:["直髮","波浪","捲髮","滑順","豐厚","紋理感","編髮","馬尾","鬆散"]
+    }
+  };
+  const UITXT = {
+    eng: {
+      step1Title:"🎨 Select Styles", selTitle:"✨ SELECTED STYLES", reset:"🗑️ CLEAR",
+      nextPhoto:"📸 Next: Photo →", photoTitle:"📸 Take a Selfie",
+      startCam:"📷 Start Camera", capture:"📸 Capture!", retake:"🔄 Retake",
+      nextGen:"🤖 Next: Generate →", genBtn:"🚀 Generate Image",
+      nextPrint:"🖼️ Next: Print →", printBtn:"🖨️ Print", downloadBtn:"⬇️ Download PNG",
+      promptBase:"Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by Japanese, Korean and American styles. Present the results as a single 3x3 grid collage of close-up images. Show the style name in English at the bottom-right corner of each image.",
+      camStatus:"Press 'Start Camera' to enable webcam", camStatusReady:"Camera ready! Press 'Capture!' to take photo",
+      camStatusDone:"✅ Photo captured!", genPlaceholder:"✨ After selecting styles and taking photo, click 'Generate Image'",
+      chooseFrame:"📂 Choose Frame", frameDefault:"Not selected (using placeholder frame)",
+      back:"← Back", genTitle:"🤖 Google Gemini Generate", printTitle:"🖼️ 4R Print",
+      settings:"⚙️ Settings", apiLabel:"🔑 Google Gemini API Key",
+      keyHint:'Get one at <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00ADEF;">Google AI Studio</a> for free. Saved automatically.',
+      save:"💾 Save", apiMissing:"🔑 API not set", apiOk:"🔑 API set ✓",
+      frameLabel:"📂 Upload 4R Frame (optional):", chooseFrameBtn:"Choose Frame",
+      subtitle:"", modalTitle:"⚙️ Settings",
+      noKeyAlert:"Edit config.js and add your Gemini API Key",
+      step1:"Styles", step2:"Photo", step3:"Generate", step4:"Print"
+    },
+    cht: {
+      step1Title:"🎨 揀選風格", selTitle:"✨ 已選風格", reset:"🗑️ 清除",
+      nextPhoto:"📸 下一步：影相 →", photoTitle:"📸 影相 Selfie",
+      startCam:"📷 開相機", capture:"📸 影相！", retake:"🔄 重新影過",
+      nextGen:"🤖 下一步：生成 →", genBtn:"🚀 生成圖像",
+      nextPrint:"🖼️ 下一步：打印 →", printBtn:"🖨️ 打印", downloadBtn:"⬇️ 下載 PNG",
+      promptBase:"生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受日本、韓國與美國啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角以英文顯示風格名稱。",
+      camStatus:"按「開相機」啟用鏡頭", camStatusReady:"相機已就緒！按「影相！」拍攝",
+      camStatusDone:"✅ 已拍攝！", genPlaceholder:"✨ 揀好風格、影完相後，按下面按鈕生成",
+      chooseFrame:"📂 揀選相框", frameDefault:"未選取（使用預設外框）",
+      back:"← 上一步", genTitle:"🤖 Google Gemini 生成", printTitle:"🖼️ 4R 打印",
+      settings:"⚙️ 設定", apiLabel:"🔑 Google Gemini API Key",
+      keyHint:'唔知點拎？去 <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00ADEF;">Google AI Studio</a> 免費申請。設定後會自動儲存喺瀏覽器。',
+      save:"💾 儲存", apiMissing:"🔑 未設定 API", apiOk:"🔑 API 已設定 ✓",
+      frameLabel:"📂 上傳 4R 相框 (可選):", chooseFrameBtn:"揀選相框",
+      subtitle:"", modalTitle:"⚙️ 設定",
+      noKeyAlert:"請先按 ⚙️ 設定你的 Gemini API Key",
+      step1:"揀風格", step2:"影相", step3:"生成", step4:"打印"
+    }
+  };
+  function txt(k){ return UITXT[currentLang][k]||UITXT.eng[k]; }
+  function fmtEN(a){ if(!a.length)return ''; if(a.length===1)return a[0]; if(a.length===2)return a[0]+' and '+a[1]; return a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
+  function fmtCHT(a){ if(!a.length)return ''; if(a.length===1)return a[0]; if(a.length===2)return a[0]+'與'+a[1]; return a.slice(0,-1).join('、')+'與'+a[a.length-1]; }
+
+  // ---- Detect file:// ----
+  if(location.protocol==='file:'){
+    console.warn('Running from file:// — some features may need a local server. Use: python3 -m http.server 8080');
+  }
+
+  // ---- API Key (modal) ----
+  let savedApiKey = '';
+  window._apiKey = ''; // global backup
+
+  function getApiKey(){ savedApiKey = window._apiKey; return savedApiKey; }
+
+  function updateApiIndicator(){
+    const el=document.getElementById('apiIndicator');
+    if(savedApiKey){
+      el.textContent='✓';
+      el.style.color='#5a7a00';
+    } else {
+      el.textContent='';
+    }
+  }
+
+  // Modal logic
+  const settingsModal=document.getElementById('settingsModal');
+  document.getElementById('settingsBtn').addEventListener('click',()=>{
+    document.getElementById('modalApiKey').value=savedApiKey;
+    settingsModal.style.display='flex';
+  });
+  document.getElementById('modalClose').addEventListener('click',()=>{ settingsModal.style.display='none'; });
+  window.addEventListener('click',e=>{ if(e.target===settingsModal) settingsModal.style.display='none'; });
+  document.getElementById('saveKeyBtn').addEventListener('click',()=>{
+    const val=document.getElementById('modalApiKey').value.trim();
+    savedApiKey=val; window._apiKey=val;
+    try { localStorage.setItem('gemini_api_key', val); } catch(e) {}
+    updateApiIndicator();
+    settingsModal.style.display='none';
+  });
+
+  // ---- Step navigation ----
+  function goStep(n){
+    for(let i=1;i<=4;i++){
+      document.getElementById('panel'+i).classList.toggle('active',i===n);
+      document.getElementById('step'+i).classList.toggle('active',i===n);
+      document.getElementById('step'+i).classList.toggle('done',i<n);
+    }
+  }
+
+  // ---- Style panel ----
+  const srcEls = {
+    culture: document.getElementById('sourceCulture'),
+    aesthetic: document.getElementById('sourceAesthetic'),
+    decade: document.getElementById('sourceDecade'),
+    texture: document.getElementById('sourceTexture')
+  };
+  const destDiv = document.getElementById('destinationCanvas');
+  const MAX_TAGS = 5;
+
+  function getWords(){ return WORDS[currentLang]; }
+
+  function createSrcTag(text){
+    const s=document.createElement('span'); s.className='word-tag'; s.textContent=text;
+    s.setAttribute('draggable','true'); s.setAttribute('data-value',text);
+    s.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',text); s.style.opacity='0.5'; });
+    s.addEventListener('dragend',()=>{ s.style.opacity='1'; destDiv.classList.remove('drag-over'); });
+    return s;
+  }
+  function createDestTag(text){
+    const s=document.createElement('span'); s.className='word-tag'; s.textContent=text;
+    s.setAttribute('data-value',text); s.setAttribute('draggable','false');
+    s.addEventListener('click',()=>{ if(s.parentNode===destDiv){ s.remove(); updCount(); updPrompt(); }});
+    return s;
+  }
+  function refreshPools(){
+    const w=getWords();
+    for(let k of ['culture','aesthetic','decade','texture']){
+      srcEls[k].innerHTML='';
+      w[k].forEach(t=>srcEls[k].appendChild(createSrcTag(t)));
+    }
+  }
+  function updCount(){
+    const c=destDiv.children.length;
+    document.getElementById('selectedCount').textContent=c;
+    document.getElementById('maxWarning').textContent=c>=MAX_TAGS?(currentLang==='eng'?'Maximum 5 tags allowed (click ✕ to remove)':'最多選擇5個標籤（點擊✕移除）'):'';
+  }
+  function updPrompt(){
+    const sel=Array.from(destDiv.children).map(t=>t.textContent.trim());
+    const baseEN="Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by {LIST}. Present the results as a single 3x3 grid collage of close-up images. Show the style name in English at the bottom-right corner of each image.";
+    const baseCHT="生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受{LIST}啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角以英文顯示風格名稱。";
+    let list,full;
+    if(currentLang==='eng'){
+      list=sel.length?fmtEN(sel):'Japanese, Korean and American';
+      full=baseEN.replace('{LIST}',list);
+    } else {
+      list=sel.length?fmtCHT(sel):'日本、韓國與美國';
+      full=baseCHT.replace('{LIST}',list);
+    }
+    let html;
+    if(currentLang==='eng'){
+      const p="Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by ";
+      const s=". Present the results as a single 3x3 grid collage of close-up images. Show the style name in English at the bottom-right corner of each image.";
+      if(!sel.length) html=p+'<em>Japanese, Korean and American</em>'+s;
+      else {
+        const em=a=>'<em>'+a+'</em>';
+        if(sel.length===1) html=p+em(sel[0])+s;
+        else if(sel.length===2) html=p+em(sel[0])+' and '+em(sel[1])+s;
+        else html=p+sel.slice(0,-1).map(em).join(', ')+' and '+em(sel[sel.length-1])+s;
+      }
+    } else {
+      const p="生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受";
+      const s="啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角以英文顯示風格名稱。";
+      if(!sel.length) html=p+'<em>日本、韓國與美國</em>'+s;
+      else {
+        const em=a=>'<em>'+a+'</em>';
+        if(sel.length===1) html=p+em(sel[0])+s;
+        else if(sel.length===2) html=p+em(sel[0])+'與'+em(sel[1])+s;
+        else html=p+sel.slice(0,-1).map(em).join('、')+'與'+em(sel[sel.length-1])+s;
+      }
+    }
+    document.getElementById('promptDisplay').innerHTML=html;
+  }
+  function getPlainPrompt(){
+    const sel=Array.from(destDiv.children).map(t=>t.textContent.trim());
+    if(currentLang==='eng'){
+      const l=sel.length?fmtEN(sel):'Japanese, Korean and American';
+      return "Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by "+l+". Present the results as a single 3x3 grid collage of close-up images. Show the style name in English at the bottom-right corner of each image.";
+    } else {
+      const l=sel.length?fmtCHT(sel):'日本、韓國與美國';
+      return "生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受"+l+"啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角以英文顯示風格名稱。";
+    }
+  }
+
+  // Drag-drop setup
+  destDiv.addEventListener('dragover',e=>{ e.preventDefault(); destDiv.classList.add('drag-over'); });
+  destDiv.addEventListener('dragleave',()=>{ destDiv.classList.remove('drag-over'); });
+  destDiv.addEventListener('drop',e=>{
+    e.preventDefault(); destDiv.classList.remove('drag-over');
+    const w=e.dataTransfer.getData('text/plain'); if(!w)return;
+    if(destDiv.children.length>=MAX_TAGS){ alert(currentLang==='eng'?'Max 5 tags.':'最多5個標籤'); return; }
+    if(!Array.from(destDiv.children).some(t=>t.textContent===w)){ destDiv.appendChild(createDestTag(w)); updCount(); updPrompt(); }
+    else alert(currentLang==='eng'?'Already selected.':'已選');
+  });
+  for(let k of Object.keys(srcEls)){
+    srcEls[k].addEventListener('dragover',e=>e.preventDefault());
+    srcEls[k].addEventListener('drop',e=>e.preventDefault());
+  }
+  document.body.addEventListener('dragover',e=>e.preventDefault());
+  document.body.addEventListener('drop',e=>e.preventDefault());
+
+  document.getElementById('resetBtn').addEventListener('click',()=>{ destDiv.innerHTML=''; updCount(); updPrompt(); });
+
+  // Step 1 → 2 (global function for inline onclick)
+  window._goToStep2 = function(){
+    const key = window._apiKey || savedApiKey;
+    if(!key){
+      alert(txt('noKeyAlert'));
+      return;
+    }
+    goStep(2);
+  };
+
+  // ---- Back buttons ----
+  document.getElementById('backFromCam').addEventListener('click',()=>{ goStep(1); });
+  document.getElementById('backFromGen').addEventListener('click',()=>{ goStep(2); });
+  document.getElementById('backFromPrint').addEventListener('click',()=>{ goStep(3); });
+
+  // ---- Camera ----
+  const video=document.getElementById('cameraPreview');
+  const hiddenCanvas=document.getElementById('hiddenCanvas');
+  const capturedImg=document.getElementById('capturedPreview');
+  const camStatus=document.getElementById('cameraStatus');
+  const startCamBtn=document.getElementById('startCameraBtn');
+  const captureBtn=document.getElementById('captureBtn');
+  const retakeBtn=document.getElementById('retakeBtn');
+  const toGeminiBtn=document.getElementById('toGeminiBtn');
+  let camStream=null;
+  let capturedDataUrl=null;
+
+  async function startCam(){
+    try{
+      camStream=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+      video.srcObject=camStream;
+      video.style.display='block';
+      capturedImg.style.display='none';
+      startCamBtn.disabled=true;
+      captureBtn.disabled=false;
+      camStatus.textContent=txt('camStatusReady');
+    } catch(e){ camStatus.textContent='Camera error: '+e.message; }
+  }
+  function stopCam(){
+    if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  }
+
+  startCamBtn.addEventListener('click',startCam);
+  captureBtn.addEventListener('click',()=>{
+    if(!camStream)return;
+    const w=video.videoWidth,h=video.videoHeight;
+    if(!w||!h)return;
+    hiddenCanvas.width=w; hiddenCanvas.height=h;
+    hiddenCanvas.getContext('2d').drawImage(video,0,0,w,h);
+    capturedDataUrl=hiddenCanvas.toDataURL('image/jpeg',0.92);
+    capturedImg.src=capturedDataUrl;
+    capturedImg.style.display='block';
+    video.style.display='none';
+    stopCam();
+    startCamBtn.disabled=false; startCamBtn.textContent=currentLang==='eng'?'📷 Start Camera':'📷 開相機';
+    captureBtn.disabled=true;
+    retakeBtn.style.display='inline-block';
+    toGeminiBtn.style.display='inline-block';
+    camStatus.textContent=txt('camStatusDone');
+  });
+  retakeBtn.addEventListener('click',()=>{
+    capturedDataUrl=null;
+    capturedImg.style.display='none';
+    video.style.display='block';
+    retakeBtn.style.display='none';
+    toGeminiBtn.style.display='none';
+    startCam();
+  });
+  toGeminiBtn.addEventListener('click',()=>{
+    // Update prompt display in step 3
+    document.getElementById('genPromptDisplay').innerHTML = document.getElementById('promptDisplay').innerHTML;
+    goStep(3);
+  });
+
+  // ---- Gemini Generate ----
+  const generateBtn=document.getElementById('generateBtn');
+  const resultArea=document.getElementById('resultArea');
+  const placeHolder=document.getElementById('resultPlaceholder');
+  const toPrintBtn=document.getElementById('toPrintBtn');
+  let generatedImageDataUrl=null;
+
+  generateBtn.addEventListener('click',async function(){
+    const key = window._apiKey || savedApiKey;
+    if(!key){ alert(txt('noKeyAlert')); return; }
+    if(!capturedDataUrl){ alert('Please take a photo first'); goStep(2); return; }
+
+    generateBtn.disabled=true; generateBtn.textContent='⏳ 生成中...';
+    placeHolder.innerHTML='<div class="loading-spinner"></div><div style="margin-top:10px;">Gemini 3.1 Flash Image 生圖中...</div>';
+
+    const prompt=getPlainPrompt();
+    const b64=capturedDataUrl.split(',')[1];
+
+    try{
+      // ---- Gemini 3.1 Flash Image (Interactions API) ----
+      const body={
+        model:"gemini-3.1-flash-image",
+        input:[
+          {type:"text", text:prompt},
+          {type:"image", data:b64, mime_type:"image/jpeg"}
+        ]
+      };
+
+      const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{
+        method:'POST',
+        headers:{'x-goog-api-key':key, 'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+      });
+      const data=await resp.json();
+      if(!resp.ok) throw new Error(data.error?.message||'Gemini error '+resp.status);
+
+      // Extract image from response steps
+      let imgUrl=null;
+      if(data.steps){
+        for(const step of data.steps){
+          if(step.type==='model_output' && step.content){
+            for(const item of step.content){
+              if(item.type==='image' && item.data){
+                imgUrl='data:'+(item.mime_type||'image/png')+';base64,'+item.data;
+                break;
+              }
+            }
+          }
+          if(imgUrl) break;
+        }
+      }
+      // Fallback: try output_image convenience field
+      if(!imgUrl && data.output_image && data.output_image.data){
+        imgUrl='data:'+(data.output_image.mime_type||'image/png')+';base64,'+data.output_image.data;
+      }
+
+      if(imgUrl){
+        generatedImageDataUrl=imgUrl;
+        placeHolder.style.display='none';
+        const old=resultArea.querySelector('img');
+        if(old) old.remove();
+        const img=document.createElement('img');
+        img.src=imgUrl; img.alt='Generated portrait';
+        resultArea.appendChild(img);
+        toPrintBtn.style.display='inline-block';
+      } else {
+        throw new Error('Model did not return an image');
+      }
+    } catch(e){
+      placeHolder.textContent='❌ Error: '+e.message;
+    }
+    generateBtn.disabled=false; generateBtn.textContent=txt('genBtn');
+  }); // end generateBtn click
+
+  toPrintBtn.addEventListener('click',()=>{
+    goStep(4);
+    renderPrintCanvas();
+  });
+
+  // ---- 4R Print ----
+  const printCanvas=document.getElementById('printCanvas');
+  const pCtx=printCanvas.getContext('2d');
+  const frameFileInput=document.getElementById('frameFileInput');
+  const frameFileName=document.getElementById('frameFileName');
+  const printBtn=document.getElementById('printBtn');
+  const downloadBtn=document.getElementById('downloadBtn');
+  let frameImage=null;
+
+  function drawPlaceholderCanvas(){
+    pCtx.fillStyle='#ffffff'; pCtx.fillRect(0,0,300,450);
+    pCtx.strokeStyle='#1d3b53'; pCtx.lineWidth=4; pCtx.setLineDash([10,6]);
+    pCtx.strokeRect(8,8,284,434); pCtx.setLineDash([]);
+    pCtx.fillStyle='#b2c4d6'; pCtx.font='bold 16px Arial'; pCtx.textAlign='center';
+    pCtx.fillText('4R Portrait Frame',150,80);
+    pCtx.fillStyle='#2e5572'; pCtx.font='14px Arial';
+    pCtx.fillText('YC',150,130);
+  }
+
+  function renderPrintCanvas(){
+    pCtx.fillStyle='#ffffff'; pCtx.fillRect(0,0,300,450);
+    if(frameImage) pCtx.drawImage(frameImage,0,0,300,450);
+    else drawPlaceholderCanvas();
+    if(generatedImageDataUrl){
+      const img=new Image();
+      img.onload=()=>{
+        const margin=12, topM=90;
+        const availW=300-2*margin;
+        let sz=availW; const maxV=450-topM; if(sz>maxV) sz=maxV;
+        const ix=margin+(availW-sz)/2, iy=topM;
+        const asp=img.width/img.height;
+        let dw,dh; if(asp>1){ dw=sz; dh=sz/asp; } else { dh=sz; dw=sz*asp; }
+        pCtx.save(); pCtx.beginPath(); pCtx.rect(ix,iy,sz,sz); pCtx.clip();
+        pCtx.drawImage(img,0,0,img.width,img.height,ix+(sz-dw)/2,iy+(sz-dh)/2,dw,dh);
+        pCtx.restore();
+      };
+      img.src=generatedImageDataUrl;
+    }
+  }
+
+  frameFileInput.addEventListener('change',async(e)=>{
+    const file=e.target.files[0];
+    if(!file){ frameImage=null; frameFileName.textContent=txt('frameDefault'); renderPrintCanvas(); return; }
+    frameFileName.textContent=file.name;
+    const img=await new Promise((res,rej)=>{
+      const r=new FileReader();
+      r.onload=()=>{const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=r.result;};
+      r.readAsDataURL(file);
+    });
+    const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+    c.getContext('2d').drawImage(img,0,0);
+    c.toBlob(b=>{
+      const i2=new Image();
+      i2.onload=()=>{ frameImage=i2; renderPrintCanvas(); };
+      i2.src=URL.createObjectURL(b);
+    },'image/png');
+  });
+
+  printBtn.addEventListener('click',()=>{
+    if(!generatedImageDataUrl){ alert('No generated image yet'); goStep(3); return; }
+    const PRINT_W=1181, PRINT_H=1748;
+    const pc=document.createElement('canvas'); pc.width=PRINT_W; pc.height=PRINT_H;
+    const px=pc.getContext('2d');
+    px.fillStyle='#ffffff'; px.fillRect(0,0,PRINT_W,PRINT_H);
+    if(frameImage) px.drawImage(frameImage,0,0,PRINT_W,PRINT_H);
+    else { px.fillStyle='#dadfe6'; px.fillRect(0,0,PRINT_W,PRINT_H); px.strokeStyle='#1f4970'; px.lineWidth=20; px.setLineDash([40,30]); px.strokeRect(20,20,PRINT_W-40,PRINT_H-40); px.setLineDash([]); }
+    const marginLR=0.05*PRINT_W, topM=0.3*PRINT_H;
+    const availW=PRINT_W-2*marginLR; let squareSize=availW; if(squareSize>PRINT_H-topM) squareSize=PRINT_H-topM;
+    const px2=marginLR+(availW-squareSize)/2, py=topM;
+    const img=new Image();
+    img.onload=()=>{
+      const asp=img.width/img.height; let dw,dh;
+      if(asp>1){ dw=squareSize; dh=squareSize/asp; } else { dh=squareSize; dw=squareSize*asp; }
+      const dx=px2+(squareSize-dw)/2, dy=py+(squareSize-dh)/2;
+      px.save(); px.beginPath(); px.rect(px2,py,squareSize,squareSize); px.clip();
+      px.drawImage(img,0,0,img.width,img.height,dx,dy,dw,dh);
+      px.restore();
+      const pd=pc.toDataURL('image/png');
+      const win=window.open('','_blank','width=900,height=1200');
+      if(!win){ alert('Pop-up blocked'); return; }
+      win.document.write('<html><head><title>4R Print</title><style>body{display:flex;justify-content:center;align-items:center;background:#444;margin:30px}img{max-width:100%;height:auto;box-shadow:0 25px 40px black;border-radius:8px}@media print{body{background:white}img{box-shadow:none}}</style></head><body><img src="'+pd+'" style="max-height:98vh;"><script>window.onload=()=>{setTimeout(()=>{window.print()},200)};<\/script></body></html>');
+      win.document.close();
+    };
+    img.src=generatedImageDataUrl;
+  });
+
+  downloadBtn.addEventListener('click',()=>{
+    if(!generatedImageDataUrl){ alert('No generated image yet'); goStep(3); return; }
+    const PRINT_W=1181, PRINT_H=1748;
+    const pc=document.createElement('canvas'); pc.width=PRINT_W; pc.height=PRINT_H;
+    const px=pc.getContext('2d');
+    px.fillStyle='#ffffff'; px.fillRect(0,0,PRINT_W,PRINT_H);
+    if(frameImage) px.drawImage(frameImage,0,0,PRINT_W,PRINT_H);
+    else { px.fillStyle='#dadfe6'; px.fillRect(0,0,PRINT_W,PRINT_H); px.strokeStyle='#1f4970'; px.lineWidth=20; px.setLineDash([40,30]); px.strokeRect(20,20,PRINT_W-40,PRINT_H-40); px.setLineDash([]); }
+    const marginLR=0.05*PRINT_W, topM=0.3*PRINT_H;
+    const availW=PRINT_W-2*marginLR; let sz=availW; if(sz>PRINT_H-topM) sz=PRINT_H-topM;
+    const pxx=marginLR+(availW-sz)/2, py=topM;
+    const img=new Image();
+    img.onload=()=>{
+      const asp=img.width/img.height; let dw,dh;
+      if(asp>1){ dw=sz; dh=sz/asp; } else { dh=sz; dw=sz*asp; }
+      const dx=pxx+(sz-dw)/2, dy=py+(sz-dh)/2;
+      px.save(); px.beginPath(); px.rect(pxx,py,sz,sz); px.clip();
+      px.drawImage(img,0,0,img.width,img.height,dx,dy,dw,dh);
+      px.restore();
+      const a=document.createElement('a'); a.href=pc.toDataURL('image/png'); a.download='4R_Print.png'; a.click();
+    };
+    img.src=generatedImageDataUrl;
+  });
+
+  // ---- Language ----
+  function setLang(l){
+    currentLang=l;
+    document.getElementById('btnENG').classList.toggle('active',l==='eng');
+    document.getElementById('btnCHT').classList.toggle('active',l==='cht');
+    refreshPools();
+    document.getElementById('titleStep1').textContent=txt('step1Title');
+    document.getElementById('selectedTitle').textContent=txt('selTitle');
+    document.getElementById('resetBtn').textContent=txt('reset');
+    document.getElementById('toCameraBtn').textContent=txt('nextPhoto');
+    document.getElementById('photoTitle').textContent=txt('photoTitle');
+    startCamBtn.textContent=txt('startCam');
+    captureBtn.textContent=txt('capture');
+    retakeBtn.textContent=txt('retake');
+    toGeminiBtn.textContent=txt('nextGen');
+    document.getElementById('genTitle').textContent=txt('genTitle');
+    generateBtn.textContent=txt('genBtn');
+    toPrintBtn.textContent=txt('nextPrint');
+    document.getElementById('printTitle').textContent=txt('printTitle');
+    printBtn.textContent=txt('printBtn');
+    downloadBtn.textContent=txt('downloadBtn');
+    document.getElementById('frameLabel').textContent=txt('frameLabel');
+    document.getElementById('chooseFrameBtn').textContent=txt('chooseFrameBtn');
+    frameFileName.textContent=frameImage?'4R - YC Photo Frame.png':txt('frameDefault');
+    document.getElementById('footerNote').textContent='Designed and Developed by Fred Chung';
+    // step labels
+    document.getElementById('step1').innerHTML='1️⃣ '+txt('step1');
+    document.getElementById('step2').innerHTML='2️⃣ '+txt('step2');
+    document.getElementById('step3').innerHTML='3️⃣ '+txt('step3');
+    document.getElementById('step4').innerHTML='4️⃣ '+txt('step4');
+    // back buttons
+    document.getElementById('backFromCam').textContent=txt('back');
+    document.getElementById('backFromGen').textContent=txt('back');
+    document.getElementById('backFromPrint').textContent=txt('back');
+    updateApiIndicator();
+    updCount(); updPrompt();
+    if(!capturedDataUrl) camStatus.textContent=txt('camStatus');
+    else camStatus.textContent=txt('camStatusDone');
+  }
+  document.getElementById('btnENG').addEventListener('click',()=>setLang('eng'));
+  document.getElementById('btnCHT').addEventListener('click',()=>setLang('cht'));
+
+  // ---- Init ----
+  // Restore key from localStorage
+  try {
+    const saved = localStorage.getItem('gemini_api_key');
+    if(saved){ savedApiKey = saved; window._apiKey = saved; updateApiIndicator(); }
+  } catch(e) {}
+  refreshPools(); updCount(); updPrompt();
+  setLang('cht');
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta name="author" content="Fred Chung">.
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 風格大變身 - AI Style Transformation @YC Openday</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Arial', Helvetica, sans-serif;
+            background-color: #FDB924;  /* primary theme color */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .app-wrapper {
+            max-width: 1600px;
+            width: 100%;
+            background-color: white;
+            border-radius: 40px 40px 30px 30px;
+            box-shadow: 0 25px 40px -10px rgba(0,0,0,0.3);
+            padding: 28px 25px 35px;
+            border: 2px solid #00ADEF;
+        }
+
+        /* header with language toggle and logo */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .logo-svg {
+            height: 100px;
+            width: auto;
+            display: flex;
+            align-items: center;
+        }
+        .logo-svg svg {
+            height: 100px;
+            width: auto;
+            max-width: 180px;
+        }
+        .logo-area h1 {
+            color: #717073;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin: 0;
+            white-space: nowrap;
+        }
+        .lang-toggle {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .camera-toggle-btn {
+            background: #FDB924;
+            border: none;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 8px 22px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #0079a8;
+            transition: 0.1s ease;
+            border: 1px solid #ffffff90;
+            margin-right: 5px;
+        }
+        .camera-toggle-btn:active {
+            transform: translateY(3px);
+            box-shadow: none;
+        }
+        .lang-btn {
+            background: #BAC405;
+            border: none;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 8px 22px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #8f9c04;
+            transition: 0.1s ease;
+            border: 1px solid #ffffff90;
+        }
+        .lang-btn.active {
+            background: #00ADEF;
+            box-shadow: 0 3px 0 #0079a8;
+            transform: scale(0.97);
+        }
+        .lang-btn:active {
+            transform: translateY(3px);
+            box-shadow: none;
+        }
+
+        /* pools row with horizontal scroll (slider) */
+        .pools-row {
+            display: flex;
+            gap: 18px;
+            overflow-x: auto;
+            padding: 8px 5px 20px 5px;
+            scrollbar-width: thin;
+            scrollbar-color: #00ADEF #FDB92430;
+            -webkit-overflow-scrolling: touch;
+        }
+        .pools-row::-webkit-scrollbar {
+            height: 10px;
+        }
+        .pools-row::-webkit-scrollbar-track {
+            background: #f0e5d8;
+            border-radius: 20px;
+        }
+        .pools-row::-webkit-scrollbar-thumb {
+            background: #00ADEF;
+            border-radius: 20px;
+        }
+        .pool-card {
+            min-width: 550px;          /* fixed width as requested */
+            max-width: 550px;
+            background: #fef8f0;
+            border-radius: 40px;
+            padding: 20px 18px 18px;
+            box-shadow: 0 8px 0 #00ADEF, 0 12px 25px -10px #00000030;
+            border: 2px solid #BAC405;
+        }
+        .pool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 8px;
+        }
+        .pool-title {
+            color: #717073;
+            font-weight: 800;
+            font-size: 1.3rem;
+            background: #FDB92440;
+            padding: 5px 18px;
+            border-radius: 40px;
+            border: 1px solid #00ADEF;
+        }
+        .pool-count {
+            background: #00ADEF;
+            color: white;
+            border-radius: 30px;
+            padding: 3px 18px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .word-canvas.source {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 18px 15px;
+            min-height: 140px;
+            border: 3px dashed #BAC405;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 12px;
+            align-items: center;
+            background: #fffcf2;
+        }
+
+        /* draggable word tags */
+        .word-tag {
+            background: white;
+            border-radius: 60px;
+            padding: 8px 22px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #717073;
+            box-shadow: 0 4px 0 #FDB924, 0 2px 10px rgba(0,0,0,0.05);
+            border: 1.5px solid #00ADEF;
+            cursor: grab;
+            transition: 0.1s;
+            user-select: none;
+            white-space: nowrap;
+            font-family: Arial, sans-serif;
+        }
+        .word-tag:active {
+            cursor: grabbing;
+            transform: scale(0.96);
+            box-shadow: 0 1px 0 #FDB924;
+        }
+
+        /* destination (selected) area */
+        .selected-section {
+            margin: 30px 0 20px;
+            background: #FDB92420;
+            border-radius: 50px;
+            padding: 20px 30px;
+            border: 3px solid #00ADEF;
+        }
+        .selected-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #717073;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        .selected-header span:last-child {
+            background: #00ADEF;
+            color: white;
+            padding: 4px 20px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+        }
+        .destination {
+            background: #fff6e7;
+            border-radius: 40px;
+            padding: 22px 20px;
+            min-height: 130px;
+            border: 2px dashed #BAC405;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 15px;
+            align-items: center;
+        }
+        .destination .word-tag {
+            cursor: pointer;
+            background: #ffffff;
+            border: 2px solid #00ADEF;
+            box-shadow: 0 3px 0 #BAC405;
+            padding-right: 38px;
+            position: relative;
+        }
+        .destination .word-tag::after {
+            content: "✕";
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #FDB924;
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            text-shadow: 0 1px 2px #00000020;
+        }
+        .destination .word-tag:hover {
+            background: #ffe6d5;
+        }
+
+        /* prompt + copy area */
+        .prompt-box {
+            background: #ffffff;
+            border-radius: 35px;
+            padding: 20px 30px;
+            border: 4px solid #00ADEF;
+            box-shadow: inset 0 2px 8px #FDB92460;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #717073;
+            margin: 10px 0 20px;
+            font-family: Arial, sans-serif;
+        }
+        .prompt-box em {
+            background: #BAC40540;
+            font-style: italic;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 30px;
+            border: 1px solid #00ADEF;
+            color: #2c2c2c;
+        }
+        .copy-reset-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .copilot-btn {
+            background: #FDB924;
+            border: none;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 10px 35px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #0072a0;
+            transition: 0.1s;
+            border: 1px solid #ffffff90;
+        }
+        .copilot-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }        
+        .copy-btn {
+            background: #00ADEF;
+            border: none;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 10px 35px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #0072a0;
+            transition: 0.1s;
+            border: 1px solid #ffffff90;
+        }
+        .copy-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+        .reset-btn {
+            background: #BAC405;
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            padding: 10px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #8a9404;
+            transition: 0.1s;
+        }
+        .reset-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        .limit-warning {
+            color: #c24a2b;
+            font-weight: bold;
+            margin-left: 15px;
+            font-size: 0.95rem;
+        }
+        .footer-note {
+            color: #717073;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        /* Camera modal styles */
+        .camera-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 40px;
+            padding: 30px;
+            max-width: 700px;
+            width: 90%;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.4);
+            border: 4px solid #00ADEF;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #717073;
+            cursor: pointer;
+            line-height: 1;
+            transition: 0.1s;
+        }
+        .modal-close:hover {
+            color: #00ADEF;
+        }
+        .modal-title {
+            color: #717073;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-right: 30px;
+        }
+        .webcam-container {
+            background: #cbdde9;
+            border-radius: 30px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #BAC405;
+        }
+        #modalVideo {
+            display: block;
+            width: 100%;
+            max-width: 640px;
+            height: auto;
+            border-radius: 20px;
+            background-color: #2d3e4e;
+            margin: 0 auto;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+        }
+        .modal-capture-btn {
+            background: #00ADEF;
+            border: none;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.3rem;
+            padding: 15px 30px;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #0072a0;
+            transition: 0.1s;
+            border: 1px solid white;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0 5px;
+        }
+        .modal-capture-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: center;
+        }
+        #modalCanvas {
+            display: none;
+        }
+        .yccampus {
+            font-size: .6em;
+            color: #0072a0;
+        }
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+    <!-- header with logo + language toggle + camera button (left of ENG) -->
+    <div class="header-bar">
+        <div class="logo-area">
+            <!-- SVG logo (scaled down to fit nicely) -->
+            <div class="logo-svg">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="200 0 600 200" style="height:100px; width:auto;">
+                    <g id="Group_358" data-name="Group 358" transform="translate(16933.158 2101.316)">
+                        <g id="Group_357" data-name="Group 357">
+                            <path id="Path_206" data-name="Path 206" d="M-16548.363-1849.328h959.406v46h-959.406Z" transform="translate(-384.795 0.328)" fill="#fff"></path>
+                            <g id="Youth_College_logo7" transform="translate(-16570.836 -2101.316)">
+                                <path id="path129285" d="M57.107,82.26a24.877,24.877,0,1,0,24.877,24.877A24.877,24.877,0,0,0,57.107,82.26m12.915,24.877A12.833,12.833,0,1,1,57.175,94.3a12.833,12.833,0,0,1,12.847,12.833" transform="translate(11.632 29.687)" fill="#b2d235"></path>
+                                <path id="path129289" d="M57.1,41.13A24.864,24.864,0,1,0,81.977,66,24.864,24.864,0,0,0,57.1,41.13M70.015,65.994A12.833,12.833,0,1,1,57.1,53.2,12.833,12.833,0,0,1,70.015,65.994" transform="translate(11.639 14.844)" fill="#00aeef"></path>
+                                <path id="path129293" d="M57.1,0A24.864,24.864,0,1,0,81.977,24.873,24.864,24.864,0,0,0,57.1,0M70.015,24.877a12.833,12.833,0,1,1-3.759-9.088,12.833,12.833,0,0,1,3.759,9.088" transform="translate(11.639 0)" fill="#faa61a"></path>
+                                <path id="Path_1" data-name="Path 1" d="M113.614,70.1V42.26h-12V71.206a8.342,8.342,0,0,1-16.644,0V42.26H72.91V70.1a20.413,20.413,0,0,0,40.7,0" transform="translate(26.313 15.251)" fill="#414042"></path>
+                                <path id="Path_2" data-name="Path 2" d="M162.7,60.36V42.26h12.126V88.912H162.7V70.8H145.182V88.912H133.07V42.26h12.112v18.1Z" transform="translate(48.024 15.251)" fill="#414042"></path>
+                                <path id="Path_3" data-name="Path 3" d="M128.272,88.912H116.146V52.535H106.13V42.26h32.158V52.535H128.272Z" transform="translate(38.302 15.251)" fill="#414042"></path>
+                                <path id="Path_4" data-name="Path 4" d="M0,42.26H14.534l8.723,12.7,8.723-12.7H46.515L29.327,66.511v22.4H17.188v-22.4Z" transform="translate(0 15.251)" fill="#414042"></path>
+                                <path id="Path_5" data-name="Path 5" d="M176.638,100.079l9.867-6.315a24.9,24.9,0,1,0,3.525,9.05h-24.5v8.642h12.411a13.16,13.16,0,1,1-1.361-11.391" transform="translate(50.741 29.682)" fill="#414042"></path>
+                                <path id="Path_6" data-name="Path 6" d="M25.015,120.009a12.847,12.847,0,1,1,9.064-21.924l8.506-8.546a24.891,24.891,0,1,0,0,35.234l-8.506-8.519a12.793,12.793,0,0,1-9.064,3.756" transform="translate(0.039 29.689)" fill="#414042"></path>
+                                <path id="Path_7" data-name="Path 7" d="M192.626,93.671v8.315h12.561v9.5H192.626v8.3h14.412v10.261H180.5V83.41h26.538V93.671Z" transform="translate(65.142 30.102)" fill="#414042"></path>
+                                <path id="Path_8" data-name="Path 8" d="M130.812,93.671v8.315h12.575v9.5H130.812v8.3h14.412v10.261H118.7V83.41h26.524V93.671Z" transform="translate(42.838 30.102)" fill="#414042"></path>
+                                <path id="Path_9" data-name="Path 9" d="M107.936,119.787h14.548v10.261H95.81V83.41h12.126Z" transform="translate(34.577 30.102)" fill="#414042"></path>
+                                <path id="Path_10" data-name="Path 10" d="M85.036,119.787H99.57v10.261H72.91V83.41H85.036Z" transform="translate(26.313 30.102)" fill="#414042"></path>
+                                <path id="path129305" d="M175.114,140.4h4.8V138.32H160.225V140.4h4.083v4.287a15.379,15.379,0,0,1-4.329,10.7h4.275a19.134,19.134,0,0,0,3.674-11.3v-3.729h3.62" transform="translate(57.736 49.919)" fill="#414042"></path>
+                                <path id="path129309" d="M168.45,138.81v13.065a3.361,3.361,0,0,0,3.348,3.375h5.226v-2.232h-3.947a.993.993,0,0,1-1.021-.993V138.81" transform="translate(60.793 50.096)" fill="#414042"></path>
+                                <rect id="Rectangle_8" data-name="Rectangle 8" width="8.438" height="2.069" transform="translate(223.527 182.809)" fill="#414042"></rect>
+                                <path id="Path_11" data-name="Path 11" d="M118.135,149.28v-7.866h9.853V139.2h-9.853V133.6h10.574v-2.218H104.131a24.5,24.5,0,0,0,.286-3.484h-3.892c0,3.919-1.361,8.778-3.239,10.819h4.083a13.419,13.419,0,0,0,2.273-5.117h9.8V139.2H102.552a1.021,1.021,0,0,0-1.021,1.007v9.077H97v2.164h16.494v8.029h4.681v-8.029h11.935V149.28Zm-4.681,0h-7.648v-7.866h7.648Z" transform="translate(35.007 46.159)" fill="#414042"></path>
+                                <path id="Path_12" data-name="Path 12" d="M89.7,136.94h11.622v-2.069H89.7v-2.45h12.52v-2.1H89.7V127.89H85.021v2.436H72.5v2.1h12.52v2.45H73.4v2.069H85.021V139.4H71.14v2.069h32.444V139.4H89.7Z" transform="translate(25.674 46.155)" fill="#414042"></path>
+                                <path id="Path_13" data-name="Path 13" d="M178.174,131.594h-7.09l2.559-3.484h-4.083L167,131.594h-5.444a1.007,1.007,0,0,0-1.007,1.021v7.063h3.606v-6.015h11.432v6.015h3.62v-7.063a1.021,1.021,0,0,0-1.034-1.021" transform="translate(57.942 46.234)" fill="#414042"></path>
+                                <path id="Path_14" data-name="Path 14" d="M99.674,139.72H73.967a1.021,1.021,0,0,0-1.007,1.021v14.33h4.246v-4.913H96.449V152A1.007,1.007,0,0,1,95.428,153H90.611v2.069H97.32a3.361,3.361,0,0,0,3.375-3.361V140.754a1.034,1.034,0,0,0-1.021-1.034Zm-3.225,8.329H77.206v-2.082H96.449Zm0-4.164H77.206v-2.1H96.449Z" transform="translate(26.331 50.424)" fill="#414042"></path>
+                                <path id="path129315" d="M161.36,129.274h-8.71a1.034,1.034,0,0,0-1.021,1.021v28.4h3.47V131.369h3.742l-3.062,7.757s2.436.191,2.64,1.987a30.809,30.809,0,0,1-.15,4.722,12.833,12.833,0,0,1-2.177,7.158h3.729a15.379,15.379,0,0,0,2.014-7.621v-5.444c0-2.273-2.518-2.722-2.518-2.722l2.722-6.8c.313-.8,0-1.143-.612-1.143" transform="translate(54.723 46.649)" fill="#414042"></path>
+                                <path id="Path_15" data-name="Path 15" d="M138.524,131.773l3.566-3.5h-3.484l-2.191,2.15c-1.361-1.279-1.225-2.246-1.225-2.246h-2.94a5.131,5.131,0,0,0,2.232,4.083l-2.218,2.164h3.484l.912-.885a15.827,15.827,0,0,0,5.525.9v-2.177a9.637,9.637,0,0,1-3.661-.517" transform="translate(47.729 46.26)" fill="#414042"></path>
+                                <path id="Path_16" data-name="Path 16" d="M138.524,136.956l3.566-3.47h-3.484l-2.191,2.109c-1.361-1.279-1.225-2.245-1.225-2.245h-2.94a5.144,5.144,0,0,0,2.232,4.083l-2.218,2.15h3.484l.912-.9a15.486,15.486,0,0,0,5.525.925v-2.177a9.2,9.2,0,0,1-3.661-.531" transform="translate(47.729 48.125)" fill="#414042"></path>
+                                <path id="path129327" d="M139.267,151.281a1.034,1.034,0,0,1-1.007,1.007h-4.818v2.069h6.723a3.361,3.361,0,0,0,3.348-3.321v-2.2h11.459v-2.069H144.085l5.62-2.98V141.7H130.19v2.082h14.97l-5.648,2.98h-14.6v2.069h14.357Z" transform="translate(45.08 51.139)" fill="#414042"></path>
+                                <path id="Path_17" data-name="Path 17" d="M156.651,142.761h-1.824V130.745a1.034,1.034,0,0,0-1.034-1.034h-7.322v2.082h4.3v2.259h-4.3v2.1h4.3v2.273h-4.3v2.109h4.3V142.8H130.25V140.53h4.314v-2.069H130.25v-2.273h4.314v-2.1H130.25v-1.606l4.681-2.722V127.22l-7.716,4.464a2.082,2.082,0,0,0-1.007,1.769V142.8h-1.837a1.034,1.034,0,0,0-1.021,1.034v6.11h4.083V144.9h26.1v5.049h4.083V143.8a1.021,1.021,0,0,0-1.021-1.034" transform="translate(44.517 45.913)" fill="#414042"></path>
+                            </g>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <h1 id="main-title">AI Style Transformation <span class='yccampus'>@YC Openday</span></h1>
+        </div>
+        <div class="lang-toggle">
+            <button id="cameraBtn" class="camera-toggle-btn">📸 Open Camera</button>
+            <button id="btnENG" class="lang-btn active">ENG</button>
+            <button id="btnCHT" class="lang-btn">中文</button>
+        </div>
+    </div>
+
+    <!-- four vocabulary pools in scrollable row, each min-width 550px -->
+    <div class="pools-row" id="poolsRow">
+        <!-- pool 1 : culture (will be filled by js) -->
+        <div class="pool-card" data-pool="culture">
+            <div class="pool-header">
+                <span class="pool-title" id="titleCulture">🌍 CULTURE</span>
+                <span class="pool-count">9</span>
+            </div>
+            <div id="sourceCulture" class="word-canvas source"></div>
+        </div>
+        <!-- pool 2 : aesthetic -->
+        <div class="pool-card" data-pool="aesthetic">
+            <div class="pool-header">
+                <span class="pool-title" id="titleAesthetic">🎨 AESTHETIC</span>
+                <span class="pool-count">9</span>
+            </div>
+            <div id="sourceAesthetic" class="word-canvas source"></div>
+        </div>
+        <!-- pool 3 : historical/decade -->
+        <div class="pool-card" data-pool="decade">
+            <div class="pool-header">
+                <span class="pool-title" id="titleDecade">📅 DECADE / HISTORIC</span>
+                <span class="pool-count">9</span>
+            </div>
+            <div id="sourceDecade" class="word-canvas source"></div>
+        </div>
+        <!-- pool 4 : texture & structure -->
+        <div class="pool-card" data-pool="texture">
+            <div class="pool-header">
+                <span class="pool-title" id="titleTexture">🧵 TEXTURE & STRUCTURE</span>
+                <span class="pool-count">9</span>
+            </div>
+            <div id="sourceTexture" class="word-canvas source"></div>
+        </div>
+    </div>
+
+    <!-- selected tags area (max 5) -->
+    <div class="selected-section">
+        <div class="selected-header">
+            <span id="selectedTitle">✨ SELECTED STYLES</span>
+            <span><span id="selectedCount">0</span>/5</span>
+        </div>
+        <div id="destinationCanvas" class="destination"></div>
+        <div id="maxWarning" class="limit-warning"></div>
+    </div>
+
+    <!-- prompt display -->
+    <div id="promptDisplay" class="prompt-box">
+        <!-- dynamic -->
+    </div>
+
+    <!-- copy & reset -->
+    <div class="copy-reset-row">
+        <button id="genAIBtn" class="copilot-btn">VTC GenAI</button>
+        <button id="copilotBtn" class="copilot-btn">Copilot</button>
+        <button id="copyBtn" class="copy-btn">📋 COPY PROMPT</button>
+        <button id="resetBtn" class="reset-btn">🗑️ CLEAR ALL</button>
+    </div>
+    <div class="footer-note" id="footerNote">Youth College Openday - Designed and Developed by Fred Chung</div>
+</div>
+
+<!-- Camera Modal -->
+<div id="cameraModal" class="camera-modal">
+    <div class="modal-content">
+        <span class="modal-close" id="modalClose">&times;</span>
+        <h2 class="modal-title" id="modalTitle">📸 Smile and Capture</h2>
+        <div class="webcam-container">
+            <video id="modalVideo" autoplay playsinline></video>
+            <canvas id="modalCanvas" style="display: none;"></canvas>
+        </div>
+        <div class="modal-footer">
+            <button id="modalCaptureBtn" class="modal-capture-btn">⬇️ DOWNLOAD PHOTO</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- word pools (ENGLISH default) ----------
+        const CULTURE_EN = ["Chinese", "Japanese", "Korean", "American", "Brazilian", "French", "Indian", "Italian", "Moroccan"];
+        const AESTHETIC_EN = ["Grunge", "Preppy", "Bohemian", "Punk", "Minimalist", "Glamour", "K-Pop", "Western", "Gothic"];
+        const DECADE_EN = ["1920s vintage", "1970s disco", "1990s grunge", "Victorian", "Rockabilly", "Mod", "Renaissance", "Art Deco", "Hippie"];
+        const TEXTURE_EN = ["straight", "wavy", "curly", "sleek", "voluminous", "textured", "braided", "ponytail", "loose"];
+
+        // Traditional Chinese translations
+        const CULTURE_CHT = ["中國", "日本", "韓國", "美國", "巴西", "法國", "印度", "義大利", "摩洛哥"];
+        const AESTHETIC_CHT = ["頹廢風", "學院風", "波西米亞", "龐克", "極簡主義", "華麗風", "K-Pop", "西部風", "歌德"];
+        const DECADE_CHT = ["1920年代復古", "1970年代迪斯可", "1990年代油漬", "維多利亞", "搖滾比利", "摩德風", "文藝復興", "裝飾藝術", "嬉皮"];
+        const TEXTURE_CHT = ["直髮", "波浪", "捲髮", "滑順", "豐厚", "紋理感", "編髮", "馬尾", "鬆散"];
+
+        // UI text bilingual
+        const uiText = {
+            eng: {
+                mainTitle: "AI Style Transformation <span class='yccampus'>@YC Openday</span>",
+                titleCulture: "🌍 CULTURE",
+                titleAesthetic: "🎨 AESTHETIC",
+                titleDecade: "📅 DECADE / HISTORIC",
+                titleTexture: "🧵 TEXTURE & STRUCTURE",
+                selectedTitle: "✨ SELECTED STYLES",
+                footerNote: "Youth College Openday - Designed and Developed by Fred Chung",
+                copyBtn: "📋 COPY PROMPT",
+                resetBtn: "🗑️ CLEAR ALL",
+                maxWarning: "Maximum 5 tags allowed (click ✕ to remove)",
+                promptDefault: "Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by Japanese, Korean, and American styles. Present the results as a single 3x3 grid collage of close-up images. Show the style name at the bottom-right corner of each image.",
+                cameraBtn: "📸 Open Camera",
+                modalTitle: "📸 Smile and Capture",
+                captureBtn: "⬇️ DOWNLOAD PHOTO"
+            },
+            cht: {
+                mainTitle: "AI 風格大變身 <span class='yccampus'>@青年學院開放日</span>",
+                titleCulture: "🌍 文化來源",
+                titleAesthetic: "🎨 美學風格",
+                titleDecade: "📅 年代／歷史風",
+                titleTexture: "🧵 髮質與結構",
+                selectedTitle: "✨ 已選風格",
+                footerNote: "青年學院開放日 - Designed and Developed by Fred Chung",
+                copyBtn: "📋 複製提示詞",
+                resetBtn: "🗑️ 全部清除",
+                maxWarning: "最多選擇5個標籤（點擊✕移除）",
+                promptDefault: "生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受日本、韓國和美國風格啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角顯示風格名稱。",
+                cameraBtn: "📸 打開相機",
+                modalTitle: "📸 笑一笑！拍攝你的臉孔",
+                captureBtn: "⬇️ 下載照片"
+            }
+        };
+
+        // current language: 'eng' or 'cht'
+        let currentLang = 'eng';
+
+        // DOM elements
+        const sourceCulture = document.getElementById('sourceCulture');
+        const sourceAesthetic = document.getElementById('sourceAesthetic');
+        const sourceDecade = document.getElementById('sourceDecade');
+        const sourceTexture = document.getElementById('sourceTexture');
+        const destDiv = document.getElementById('destinationCanvas');
+        const promptDisplay = document.getElementById('promptDisplay');
+        const selectedCountSpan = document.getElementById('selectedCount');
+        const maxWarningDiv = document.getElementById('maxWarning');
+        const copyBtn = document.getElementById('copyBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const btnENG = document.getElementById('btnENG');
+        const btnCHT = document.getElementById('btnCHT');
+        const cameraBtn = document.getElementById('cameraBtn');
+
+        // Camera modal elements
+        const modal = document.getElementById('cameraModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalCaptureBtn = document.getElementById('modalCaptureBtn');
+        const modalVideo = document.getElementById('modalVideo');
+        const modalCanvas = document.getElementById('modalCanvas');
+        let modalStream = null;
+
+        // max tags limit
+        const MAX_TAGS = 5;
+
+        // helper: get current word arrays based on language
+        function getCurrentWords() {
+            if (currentLang === 'eng') {
+                return {
+                    culture: CULTURE_EN,
+                    aesthetic: AESTHETIC_EN,
+                    decade: DECADE_EN,
+                    texture: TEXTURE_EN
+                };
+            } else {
+                return {
+                    culture: CULTURE_CHT,
+                    aesthetic: AESTHETIC_CHT,
+                    decade: DECADE_CHT,
+                    texture: TEXTURE_CHT
+                };
+            }
+        }
+
+        // ----- create draggable source tag (from any pool) -----
+        function createSourceTag(text) {
+            const span = document.createElement('span');
+            span.className = 'word-tag';
+            span.textContent = text;
+            span.setAttribute('draggable', 'true');
+            span.setAttribute('data-value', text);
+            span.addEventListener('dragstart', handleDragStart);
+            span.addEventListener('dragend', handleDragEnd);
+            return span;
+        }
+
+        // create destination tag (non-draggable, click to remove)
+        function createDestTag(text) {
+            const span = document.createElement('span');
+            span.className = 'word-tag';
+            span.textContent = text;
+            span.setAttribute('data-value', text);
+            span.setAttribute('draggable', 'false');
+            span.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (span.parentNode === destDiv) {
+                    span.remove();
+                    updateSelectedCount();
+                    updatePromptByLang();
+                }
+            });
+            return span;
+        }
+
+        // drag handlers
+        let draggedElement = null;
+        function handleDragStart(e) {
+            draggedElement = this;
+            e.dataTransfer.setData('text/plain', this.textContent);
+            this.style.opacity = '0.5';
+        }
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            draggedElement = null;
+            destDiv.classList.remove('drag-over');
+        }
+
+        // update selected count and warning
+        function updateSelectedCount() {
+            const count = destDiv.children.length;
+            selectedCountSpan.textContent = count;
+            if (count >= MAX_TAGS) {
+                maxWarningDiv.textContent = currentLang === 'eng' ? uiText.eng.maxWarning : uiText.cht.maxWarning;
+            } else {
+                maxWarningDiv.textContent = '';
+            }
+        }
+
+        // format word list with commas and "and"
+        function formatWordList(words) {
+            if (words.length === 0) return '';
+            if (words.length === 1) return words[0];
+            if (words.length === 2) return `${words[0]} and ${words[1]}`;
+            const allButLast = words.slice(0, -1).join(', ');
+            return `${allButLast} and ${words[words.length-1]}`;
+        }
+
+        // format for Chinese: use "、" and "與"
+        function formatWordListCHT(words) {
+            if (words.length === 0) return '';
+            if (words.length === 1) return words[0];
+            if (words.length === 2) return `${words[0]}與${words[1]}`;
+            const allButLast = words.slice(0, -1).join('、');
+            return `${allButLast}與${words[words.length-1]}`;
+        }
+
+        // update prompt based on selected tags and current language
+        function updatePromptByLang() {
+            const selected = Array.from(destDiv.children).map(tag => tag.textContent.trim());
+            let finalString = '';
+            let fullPrompt = '';
+
+            const basePromptEN = "Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by {LIST} styles. Present the results as a single 3x3 grid collage of close-up images. Show the style name in English at the bottom-right corner of each image.";
+            const basePromptCHT = "生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受{LIST}啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角以英文顯示風格名稱。";
+
+            if (selected.length === 0) {
+                // default placeholder
+                if (currentLang === 'eng') {
+                    finalString = 'Japanese, Korean and American';
+                    fullPrompt = basePromptEN.replace('{LIST}', finalString);
+                } else {
+                    finalString = '日本、韓國與美國';
+                    fullPrompt = basePromptCHT.replace('{LIST}', finalString);
+                }
+            } else {
+                if (currentLang === 'eng') {
+                    finalString = formatWordList(selected);
+                    fullPrompt = basePromptEN.replace('{LIST}', finalString);
+                } else {
+                    finalString = formatWordListCHT(selected);
+                    fullPrompt = basePromptCHT.replace('{LIST}', finalString);
+                }
+            }
+
+            // highlight selected part with <em>
+            let highlighted = '';
+            if (currentLang === 'eng') {
+                let displayList = selected.length === 0 ? 'Japanese, Korean and American' : formatWordList(selected);
+                let prefix = "Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by ";
+                let suffix = " styles. Present the results as a single 3x3 grid collage of close-up images. Show the style name in English at the bottom-right corner of each image.";
+                if (selected.length === 0) {
+                    highlighted = prefix + '<em>Japanese, Korean and American</em>' + suffix;
+                } else {
+                    let displaySelected = '';
+                    if (selected.length === 1) displaySelected = `<em>${selected[0]}</em>`;
+                    else if (selected.length === 2) displaySelected = `<em>${selected[0]}</em> and <em>${selected[1]}</em>`;
+                    else {
+                        const last = selected[selected.length-1];
+                        const rest = selected.slice(0, -1).map(w => `<em>${w}</em>`).join(', ');
+                        displaySelected = rest + ' and <em>' + last + '</em>';
+                    }
+                    highlighted = prefix + displaySelected + suffix;
+                }
+            } else {
+                let prefix = "生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受";
+                let suffix = "啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角以英文顯示風格名稱。";
+                if (selected.length === 0) {
+                    highlighted = prefix + '<em>日本、韓國與美國</em>' + suffix;
+                } else {
+                    let displaySelected = '';
+                    if (selected.length === 1) displaySelected = `<em>${selected[0]}</em>`;
+                    else if (selected.length === 2) displaySelected = `<em>${selected[0]}</em>與<em>${selected[1]}</em>`;
+                    else {
+                        const last = selected[selected.length-1];
+                        const rest = selected.slice(0, -1).map(w => `<em>${w}</em>`).join('、');
+                        displaySelected = rest + '與<em>' + last + '</em>';
+                    }
+                    highlighted = prefix + displaySelected + suffix;
+                }
+            }
+            promptDisplay.innerHTML = highlighted;
+        }
+
+        // refresh all source pools based on current language
+        function refreshSourcePools() {
+            const words = getCurrentWords();
+            sourceCulture.innerHTML = '';
+            sourceAesthetic.innerHTML = '';
+            sourceDecade.innerHTML = '';
+            sourceTexture.innerHTML = '';
+
+            words.culture.forEach(w => sourceCulture.appendChild(createSourceTag(w)));
+            words.aesthetic.forEach(w => sourceAesthetic.appendChild(createSourceTag(w)));
+            words.decade.forEach(w => sourceDecade.appendChild(createSourceTag(w)));
+            words.texture.forEach(w => sourceTexture.appendChild(createSourceTag(w)));
+        }
+
+        // update all UI texts (titles, footer, buttons, prompt, camera button)
+        function updateUILanguage() {
+            const txt = currentLang === 'eng' ? uiText.eng : uiText.cht;
+            document.getElementById('main-title').innerHTML = txt.mainTitle;
+            document.getElementById('titleCulture').textContent = txt.titleCulture;
+            document.getElementById('titleAesthetic').textContent = txt.titleAesthetic;
+            document.getElementById('titleDecade').textContent = txt.titleDecade;
+            document.getElementById('titleTexture').textContent = txt.titleTexture;
+            document.getElementById('selectedTitle').textContent = txt.selectedTitle;
+            document.getElementById('footerNote').textContent = txt.footerNote;
+            copyBtn.textContent = txt.copyBtn;
+            resetBtn.textContent = txt.resetBtn;
+            cameraBtn.textContent = txt.cameraBtn;
+            modalTitle.textContent = txt.modalTitle;
+            modalCaptureBtn.textContent = txt.captureBtn;
+
+            // update prompt
+            updatePromptByLang();
+            updateSelectedCount(); // warning message update
+        }
+
+        // switch language
+        function setLanguage(lang) {
+            currentLang = lang;
+            btnENG.classList.toggle('active', lang === 'eng');
+            btnCHT.classList.toggle('active', lang === 'cht');
+            refreshSourcePools();
+            updateUILanguage();
+        }
+
+        // ----- destination drop target -----
+        destDiv.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            destDiv.classList.add('drag-over');
+        });
+        destDiv.addEventListener('dragleave', () => {
+            destDiv.classList.remove('drag-over');
+        });
+        destDiv.addEventListener('drop', (e) => {
+            e.preventDefault();
+            destDiv.classList.remove('drag-over');
+            const word = e.dataTransfer.getData('text/plain');
+            if (!word) return;
+
+            // max 5 limit
+            if (destDiv.children.length >= MAX_TAGS) {
+                alert(currentLang === 'eng' ? 'Maximum 5 tags allowed.' : '最多只能選擇5個標籤');
+                return;
+            }
+
+            // avoid duplicate
+            const existing = Array.from(destDiv.children).some(tag => tag.textContent === word);
+            if (!existing) {
+                const chip = createDestTag(word);
+                destDiv.appendChild(chip);
+                updateSelectedCount();
+                updatePromptByLang();
+            } else {
+                alert(currentLang === 'eng' ? 'Tag already selected.' : '該標籤已選');
+            }
+        });
+
+        // prevent default on source divs
+        [sourceCulture, sourceAesthetic, sourceDecade, sourceTexture].forEach(div => {
+            div.addEventListener('dragover', e => e.preventDefault());
+            div.addEventListener('drop', e => e.preventDefault());
+        });
+
+        // reset button
+        resetBtn.addEventListener('click', () => {
+            while (destDiv.firstChild) destDiv.removeChild(destDiv.firstChild);
+            updateSelectedCount();
+            updatePromptByLang();
+        });
+
+        copilotBtn.addEventListener('click', () => {
+            window.open("https://m365.cloud.microsoft/chat/");
+        });
+
+        genAIBtn.addEventListener('click', () => {
+            window.open("https://genai.vtc.edu.hk");
+        });
+
+        // copy button
+        copyBtn.addEventListener('click', () => {
+            const selected = Array.from(destDiv.children).map(tag => tag.textContent.trim());
+            let finalString = '';
+            let fullPlain = '';
+
+            if (currentLang === 'eng') {
+                const base = "Generate nine distinct portrait headshots of the person from the source image, maintaining consistent facial features and attire. Each headshot should feature a different hairstyle, including variations inspired by {LIST}. Present the results as a single 3x3 grid collage of close-up images. Show the style name at the bottom-right corner of each image.";
+                if (selected.length === 0) finalString = 'Japanese, Korean and American';
+                else finalString = formatWordList(selected);
+                fullPlain = base.replace('{LIST}', finalString);
+            } else {
+                const base = "生成九張不同的人物肖像頭像，使用來源影像保持面部特徵和服裝一致。每張頭像應展現不同的髮型，包括受{LIST}啟發的變化。以3x3網格拼貼方式呈現，並在每張圖片的右下角顯示風格名稱。";
+                if (selected.length === 0) finalString = '日本、韓國與美國';
+                else finalString = formatWordListCHT(selected);
+                fullPlain = base.replace('{LIST}', finalString);
+            }
+
+            navigator.clipboard.writeText(fullPlain).then(() => {
+                copyBtn.textContent = currentLang === 'eng' ? '✅ COPIED!' : '✅ 已複製!';
+                setTimeout(() => {
+                    copyBtn.textContent = currentLang === 'eng' ? uiText.eng.copyBtn : uiText.cht.copyBtn;
+                }, 1500);
+            }).catch(() => alert('Clipboard error'));
+        });
+
+        // language buttons
+        btnENG.addEventListener('click', () => setLanguage('eng'));
+        btnCHT.addEventListener('click', () => setLanguage('cht'));
+
+        // Camera modal logic
+        async function openCameraModal() {
+            modal.style.display = 'flex';
+            try {
+                modalStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                modalVideo.srcObject = modalStream;
+            } catch (err) {
+                alert(currentLang === 'eng' ? 'Camera access denied or not available.' : '無法存取相機或相機不可用');
+                modal.style.display = 'none';
+            }
+        }
+
+        function closeCameraModal() {
+            if (modalStream) {
+                modalStream.getTracks().forEach(track => track.stop());
+                modalStream = null;
+            }
+            modalVideo.srcObject = null;
+            modal.style.display = 'none';
+        }
+
+        cameraBtn.addEventListener('click', openCameraModal);
+        modalClose.addEventListener('click', closeCameraModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeCameraModal();
+        });
+
+        // Capture and download
+        modalCaptureBtn.addEventListener('click', () => {
+            if (!modalStream) return;
+            const vWidth = modalVideo.videoWidth;
+            const vHeight = modalVideo.videoHeight;
+            if (vWidth === 0 || vHeight === 0) {
+                alert(currentLang === 'eng' ? 'Camera not ready' : '相機未就緒');
+                return;
+            }
+            modalCanvas.width = vWidth;
+            modalCanvas.height = vHeight;
+            const ctx = modalCanvas.getContext('2d');
+            ctx.drawImage(modalVideo, 0, 0, vWidth, vHeight);
+
+            // timestamp YYYYMMDD_HHMMSS.png
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timestamp = `${year}${month}${day}_${hours}${minutes}${seconds}`;
+            const fileName = `${timestamp}.png`;
+
+            const pngDataUrl = modalCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = pngDataUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // initial render (english)
+        refreshSourcePools();
+        updateSelectedCount();
+        updatePromptByLang();
+
+        // extra: prevent body drop
+        document.body.addEventListener('dragover', e => e.preventDefault());
+        document.body.addEventListener('drop', e => e.preventDefault());
+
+
+        // trigger a "Chinese" button to set defailt Chinese version
+        const chineseBtn = document.getElementById("btnCHT");
+        chineseBtn.click();
+    })();
+</script>
+</body>
+</html>

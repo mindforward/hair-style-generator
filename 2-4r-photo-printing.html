@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖼️ 4R - YC Open Day</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            background: #FDB924;  /* theme primary */
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', 'Helvetica', sans-serif;  /* Arial */
+            padding: 20px;
+        }
+        .workspace {
+            background: #FFFFFF;  /* white background for card, font color #717073 will be used on text */
+            border-radius: 42px;
+            box-shadow: 0 30px 45px -15px #4a3b1f;
+            padding: 2rem 2.5rem;
+            max-width: 950px;
+            width: fit-content;
+            border: 2px solid #BAC405;
+        }
+        h2 {
+            font-weight: 400;
+            font-size: 1.8rem;
+            color: #717073;  /* font color */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.3rem;
+        }
+        h2 span {
+            background: #00ADEF;  /* theme accent */
+            color: white;
+            font-size: 0.9rem;
+            padding: 0.2rem 1rem;
+            border-radius: 60px;
+            font-weight: 400;
+        }
+        .note {
+            color: #717073;  /* font color */
+            margin-bottom: 1.4rem;
+            border-left: 5px solid #FDB924;
+            padding-left: 1rem;
+            font-size: 1rem;
+            background: #FFF2D6;  /* light tint based on #FDB924 */
+            border-radius: 0 14px 14px 0;
+            width: fit-content;
+            padding: 0.5rem 1.2rem;
+            backdrop-filter: blur(2px);
+        }
+        .canvas-container {
+            background: #BAC405;  /* theme color */
+            border-radius: 28px;
+            padding: 2rem 2rem;
+            display: flex;
+            justify-content: center;
+            box-shadow: inset 0 5px 10px #A3B004, 0 12px 20px -10px #3f3f1a;
+            margin-bottom: 2rem;
+            border: 1px solid #FDB924;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+            box-shadow: 0 20px 28px -12px #3a3200;
+            background: #ffffff;
+            border: 2px solid #FDB924;
+            cursor: pointer;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 1.8rem;
+            background: #FEF3D5;  /* light background with theme tint */
+            padding: 1.2rem 2rem;
+            border-radius: 60px;
+            backdrop-filter: blur(4px);
+            margin: 1.5rem 0 1rem;
+            border: 1px solid #BAC405;
+        }
+        .upload-btn {
+            background: #00ADEF;  /* theme blue */
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 12px -5px #02638f;
+            cursor: pointer;
+            transition: 0.1s;
+            border: 1px solid #FDB924;
+        }
+        .upload-btn:hover {
+            background: #0095cc;
+            transform: scale(1.01);
+        }
+        .print-action {
+            background: #BAC405;  /* theme green */
+            color: white;
+            padding: 0.8rem 2.8rem;
+            border-radius: 40px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 10px 16px -6px #7f8604;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .print-action:hover {
+            background: #a3ad04;
+            transform: scale(1.02);
+        }
+        .file-hint {
+            font-size: 0.95rem;
+            color: #717073;
+            background: #FFF2D6;
+            padding: 0.3rem 1.4rem;
+            border-radius: 40px;
+            max-width: 260px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .legend {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #717073;
+            background: #FEF3D5;
+            padding: 0.5rem 1.8rem;
+            border-radius: 60px;
+            width: fit-content;
+            margin: 0 auto;
+            border: 1px solid #FDB924;
+        }
+        .legend strong {
+            background: #00ADEF;
+            color: white;
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .local-frame-section {
+            background: #FEF3D5;
+            padding: 0.8rem 1.8rem;
+            border-radius: 50px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            border: 1px solid #BAC405;
+        }
+        .frame-label {
+            font-weight: 500;
+            color: #717073;
+        }
+        .frame-file-name {
+            background: #FFFFFF;
+            border-radius: 28px;
+            padding: 0.3rem 1.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #00ADEF;
+            border: 1px dashed #FDB924;
+			width: 250PX;
+			overflow: hidden; 
+			text-overflow: ellipsis;
+			white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+<div class="workspace">
+    <h2>
+        🖼️ YC Open Day
+        <span>4R</span>
+    </h2>
+    <!-- LOCAL FRAME UPLOAD (default frame is now a local image) -->
+    <div class="local-frame-section">
+        <span class="frame-label">🖼️ 4R Portrait Frame:</span>
+        <label class="upload-btn" style="background:#00ADEF; padding:0.4rem 1.8rem; gap:6px;">
+            <span>📂 Choose Frame</span>
+            <input type="file" id="frameFileInput" accept="image/*" style="position:absolute; opacity:0; width:0">
+        </label>
+        <span class="frame-file-name" id="frameFileName">none selected (using memory placeholder)</span>
+    </div>
+
+    <!-- CANVAS: changed from A4 to 4R dimensions (100mm x 148mm) → ratio 2:3 (portrait height 1.5 × width) 
+         For preview we use width 400px, height 600px (4R proportion ≈ 1:1.5) -->
+    <div class="canvas-container">
+        <canvas id="mainCanvas" width="400" height="600"></canvas>
+    </div>
+
+    <!-- image upload (square photo) and print -->
+    <div class="toolbar">
+        <label class="upload-btn">
+            <span>📸 Choose Photo</span>
+            <input type="file" id="photoFileInput" accept="image/*" style="display:none;" >
+        </label>
+        <button class="print-action" id="printBtn">🖨️ Print the Photo</button>
+        <div class="file-hint" id="photoFileName">Mo photo selected</div>
+    </div>
+    <div class="legend">
+        <strong>YC Open Day</strong> - Designed and Developed by Fred Chung
+    </div>
+</div>
+
+<script>
+(function() {
+    // ---------- canvas setup (4R portrait ratio: height 1.5 x width) ----------
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d');
+    // fixed preview size (4R proportion: 100x148mm ≈ 2:3, using 400x600 for preview)
+    const CANVAS_WIDTH = 400;      // 4R width factor
+    const CANVAS_HEIGHT = 600;     // 4R height
+
+    // references to inputs & displays
+    const frameFileInput = document.getElementById('frameFileInput');
+    const frameFileName = document.getElementById('frameFileName');
+    const photoFileInput = document.getElementById('photoFileInput');
+    const photoFileName = document.getElementById('photoFileName');
+    const printBtn = document.getElementById('printBtn');
+
+    // stored images
+    let frameImage = null;        // user-provided default frame (A4 local image)
+    let photoImage = null;        // square photo (or any, but we treat as square)
+
+    // flag to know if a custom frame is loaded, otherwise we draw a neutral grey placeholder
+    let customFrameLoaded = false;
+
+    // Helper function to create a clean image for canvas (non-tainted)
+    function createCleanImage(img) {
+        return new Promise((resolve, reject) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    const cleanImg = new Image();
+                    cleanImg.onload = () => resolve(cleanImg);
+                    cleanImg.onerror = () => reject('Failed to load clean image');
+                    cleanImg.src = URL.createObjectURL(blob);
+                } else {
+                    reject('Failed to create clean image');
+                }
+            }, 'image/png');
+        });
+    }
+
+    // ---------- helper: load image from file (returns Promise) ----------
+    function loadImageFromFile(file) {
+        return new Promise((resolve, reject) => {
+            if (!file) {
+                reject('no file');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = async () => {
+                    try {
+                        // Create a clean copy to avoid tainting
+                        const cleanImg = await createCleanImage(img);
+                        resolve(cleanImg);
+                    } catch (err) {
+                        reject('Failed to process image');
+                    }
+                };
+                img.onerror = () => reject('invalid image');
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject('read error');
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ---------- helper: load image from file path ----------
+    function loadImageFromPath(path) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = async () => {
+                try {
+                    // Create a clean copy to avoid tainting
+                    const cleanImg = await createCleanImage(img);
+                    resolve(cleanImg);
+                } catch (err) {
+                    reject('Failed to process image from path');
+                }
+            };
+            img.onerror = () => reject('failed to load image from path');
+            img.src = path;
+        });
+    }
+
+    // ---------- main render function ----------
+    async function renderComposite() {
+        // Clear canvas with neutral grey (background for frame)
+        ctx.fillStyle = '#c0cbd8';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // ---- 1. draw default frame ----
+        if (customFrameLoaded && frameImage) {
+            try {
+                // Draw frame image to cover entire canvas (stretch to fit exactly)
+                ctx.drawImage(frameImage, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            } catch (e) {
+                console.warn('frame draw error, fallback', e);
+                drawPlaceholderFrame();
+            }
+        } else {
+            drawPlaceholderFrame();   // neutral frame outline when no local frame loaded
+        }
+
+        // ---- 2. draw square photo (if exists) with 5% left/right margin, 20% top margin ----
+        if (photoImage) {
+            // margins: 5% left, 5% right → total horizontal margin 10% of canvas width
+            const marginLeftRight = 0.05 * CANVAS_WIDTH;          // 5% left, 5% right
+            const marginTop = 0.3 * CANVAS_HEIGHT;               // 20% from top
+
+            // available width for photo = canvas width minus left & right margins (total 10%)
+            const availableWidth = CANVAS_WIDTH - (2 * marginLeftRight);   // 90% width
+            // we want square photo, so initial square size = availableWidth
+            let squareSize = availableWidth;
+
+            // vertical space from marginTop to bottom
+            const maxVerticalSpace = CANVAS_HEIGHT - marginTop;
+            // If square exceeds bottom, shrink to fit (preserve square)
+            if (squareSize > maxVerticalSpace) {
+                squareSize = maxVerticalSpace;
+            }
+
+            // horizontal centering: left margin + (availableWidth - squareSize)/2
+            const photoX = marginLeftRight + (availableWidth - squareSize) / 2;
+            const photoY = marginTop;   // top starts exactly at 20% down
+
+            // draw photo maintaining original aspect but fitting INSIDE square area (show entire photo)
+            try {
+                const targetSize = squareSize;
+                const imgW = photoImage.width;
+                const imgH = photoImage.height;
+                const imgAspect = imgW / imgH;
+
+                // fit whole image inside the square (targetSize x targetSize) preserving aspect
+                let drawW, drawH;
+                if (imgAspect > 1) {
+                    // image wider than square: fit width, height will be less
+                    drawW = targetSize;
+                    drawH = targetSize / imgAspect;
+                } else {
+                    // image taller or square: fit height, width will be less
+                    drawH = targetSize;
+                    drawW = targetSize * imgAspect;
+                }
+
+                // center the image inside the square
+                const drawX = photoX + (targetSize - drawW) / 2;
+                const drawY = photoY + (targetSize - drawH) / 2;
+
+                ctx.save();
+                ctx.drawImage(photoImage, 0, 0, imgW, imgH, drawX, drawY, drawW, drawH);
+                ctx.restore();
+
+                // NO border – we do not draw any strokeRect
+
+            } catch (e) {
+                console.warn('photo drawing failed', e);
+                // fallback: draw a placeholder rectangle (no border)
+                ctx.fillStyle = '#cfdbe8';
+                ctx.fillRect(photoX, photoY, squareSize, squareSize);
+            }
+        } else {
+            // no photo: optionally draw a soft square outline to show where photo would go
+            ctx.save();
+            ctx.strokeStyle = '#77889980';
+            ctx.setLineDash([6, 6]);
+            ctx.lineWidth = 2;
+            const marginLR = 0.05 * CANVAS_WIDTH;
+            const marginT = 0.3 * CANVAS_HEIGHT;
+            const squareSize = CANVAS_WIDTH - 2 * marginLR;
+            ctx.strokeRect(marginLR, marginT, squareSize, squareSize);
+            ctx.fillStyle = '#f0f4fa40';
+            ctx.fillRect(marginLR, marginT, squareSize, squareSize);
+            ctx.fillStyle = '#2b3b4c';
+            ctx.font = '14px Arial, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('⬆️ Upload Photo', CANVAS_WIDTH/2, marginT + squareSize/2);
+            ctx.restore();
+        }
+    }
+
+    // placeholder frame (if no local frame image is loaded) – shows dashed 4R boundary, text unchanged
+    function drawPlaceholderFrame() {
+        ctx.fillStyle = '#e5ecf5';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        ctx.fillStyle = '#b2c4d6';
+        ctx.font = 'bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('🖼️ 4R PORTRAIT FRAME', CANVAS_WIDTH/2, 130);
+        ctx.font = '16px Arial, monospace';
+        ctx.fillStyle = '#2e5572';
+        ctx.fillText('YC Open Day', CANVAS_WIDTH/2, 280);
+        ctx.strokeStyle = '#1d3b53';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([12, 8]);
+        ctx.strokeRect(10, 10, CANVAS_WIDTH-20, CANVAS_HEIGHT-20);
+        ctx.setLineDash([]);
+    }
+
+    // ---------- load default frame on window load ----------
+    window.addEventListener('load', async function() {
+        try {
+            const defaultFramePath = "./4R - YC Openday Photo Frame.png";
+            const img = await loadImageFromPath(defaultFramePath);
+            frameImage = img;
+            customFrameLoaded = true;
+            frameFileName.textContent = "4R - YC Openday Photo Frame.png";
+            renderComposite();
+        } catch (err) {
+            console.log('Default frame could not be loaded, using placeholder');
+            customFrameLoaded = false;
+            frameImage = null;
+            frameFileName.textContent = 'default frame not found';
+            renderComposite();
+        }
+    });
+
+    // initial render
+    renderComposite();
+
+    // ---------- handle FRAME image upload ----------
+    frameFileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            customFrameLoaded = false;
+            frameImage = null;
+            frameFileName.textContent = 'none selected (using placeholder)';
+            renderComposite();
+            return;
+        }
+
+        frameFileName.textContent = file.name.length > 35 ? file.name.substring(0,32)+'…' : file.name;
+
+        try {
+            const img = await loadImageFromFile(file);
+            frameImage = img;
+            customFrameLoaded = true;
+            renderComposite();
+        } catch (err) {
+            alert('Failed to load frame image.');
+            customFrameLoaded = false;
+            frameImage = null;
+            frameFileName.textContent = 'failed to load';
+            renderComposite();
+        }
+    });
+
+    // ---------- handle PHOTO (square) upload ----------
+    photoFileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            photoImage = null;
+            photoFileName.textContent = 'no square photo';
+            renderComposite();
+            return;
+        }
+
+        photoFileName.textContent = file.name.length > 30 ? file.name.substring(0,27)+'…' : file.name;
+
+        try {
+            const img = await loadImageFromFile(file);
+            photoImage = img;
+            renderComposite();
+        } catch (err) {
+            alert('Could not load photo.');
+            photoImage = null;
+            photoFileName.textContent = 'photo error';
+            renderComposite();
+        }
+    });
+
+    // ---------- PRINT button: high-res output with 4R dimensions (100mm x 148mm at 300dpi ≈ 1181px x 1748px) ----------
+    printBtn.addEventListener('click', function() {
+        // 4R at 300dpi: 100mm ≈ 1181px, 148mm ≈ 1748px (portrait)
+        const PRINT_WIDTH = 1181;   
+        const PRINT_HEIGHT = 1748;  
+        const printCanvas = document.createElement('canvas');
+        printCanvas.width = PRINT_WIDTH;
+        printCanvas.height = PRINT_HEIGHT;
+        const pCtx = printCanvas.getContext('2d');
+
+        // fill background white
+        pCtx.fillStyle = '#ffffff';
+        pCtx.fillRect(0, 0, PRINT_WIDTH, PRINT_HEIGHT);
+
+        // Draw frame (print version)
+        if (customFrameLoaded && frameImage) {
+            pCtx.drawImage(frameImage, 0, 0, PRINT_WIDTH, PRINT_HEIGHT);
+        } else {
+            // fallback frame: light grey with text (same style)
+            pCtx.fillStyle = '#dadfe6';
+            pCtx.fillRect(0, 0, PRINT_WIDTH, PRINT_HEIGHT);
+            pCtx.strokeStyle = '#1f4970';
+            pCtx.lineWidth = 20;
+            pCtx.setLineDash([40, 30]);
+            pCtx.strokeRect(20, 20, PRINT_WIDTH-40, PRINT_HEIGHT-40);
+            pCtx.font = 'bold 50px Arial, sans-serif';
+            pCtx.fillStyle = '#3a5e7a';
+            pCtx.textAlign = 'center';
+            pCtx.fillText('local frame missing', PRINT_WIDTH/2, 400);
+        }
+
+        // Draw square photo with 5% left/right, 20% top margins (print version)
+        if (photoImage) {
+            const marginLR = 0.05 * PRINT_WIDTH;
+            const marginTop = 0.3 * PRINT_HEIGHT;
+            const availableW = PRINT_WIDTH - (2 * marginLR);  // 90% width
+            let squareSize = availableW;
+            const maxVertical = PRINT_HEIGHT - marginTop;
+            if (squareSize > maxVertical) squareSize = maxVertical;
+
+            const photoX = marginLR + (availableW - squareSize) / 2;
+            const photoY = marginTop;
+
+            // SHOW ALL PHOTO inside square (no crop, preserve aspect)
+            const imgW = photoImage.width;
+            const imgH = photoImage.height;
+            const imgAspect = imgW / imgH;
+
+            let drawW, drawH;
+            if (imgAspect > 1) {
+                drawW = squareSize;
+                drawH = squareSize / imgAspect;
+            } else {
+                drawH = squareSize;
+                drawW = squareSize * imgAspect;
+            }
+            const drawX = photoX + (squareSize - drawW) / 2;
+            const drawY = photoY + (squareSize - drawH) / 2;
+
+            pCtx.save();
+            pCtx.beginPath();
+            pCtx.rect(photoX, photoY, squareSize, squareSize); // clip to square area (to keep clean)
+            pCtx.clip();
+            pCtx.drawImage(photoImage, 0, 0, imgW, imgH, drawX, drawY, drawW, drawH);
+            pCtx.restore();
+
+            // NO border
+        }
+
+        // Convert to data URL without tainting issues (images are already clean)
+        const printData = printCanvas.toDataURL('image/png');
+        const win = window.open('', '_blank', 'width=900,height=1200,top=50,left=100');
+        if (!win) {
+            alert('Pop-up blocked. Please allow pop-ups.');
+            return;
+        }
+        win.document.write(`
+            <html><head><title>🖨️ 4R framed print</title>
+            <style>
+                body { display:flex; justify-content:center; align-items:center; background:#444; margin:30px; }
+                img { max-width:100%; height:auto; box-shadow: 0 25px 40px black; border-radius:8px; }
+                @media print { body { background:white; } img { box-shadow:none; } }
+            </style>
+            </head><body>
+            <img src="${printData}" style="max-height:98vh;">
+            <script>window.onload=()=>{setTimeout(()=>{window.print()},200)};<\/script>
+            </body></html>
+        `);
+        win.document.close();
+    });
+
+    // reset photo when double-click canvas (optional)
+    canvas.addEventListener('dblclick', () => {
+        photoImage = null;
+        photoFileInput.value = '';
+        photoFileName.textContent = 'no square photo';
+        renderComposite();
+    });
+
+    // also allow to reset frame with middle click
+    canvas.addEventListener('auxclick', (e) => {
+        if (e.button === 1) { // middle click
+            customFrameLoaded = false;
+            frameImage = null;
+            frameFileInput.value = '';
+            frameFileName.textContent = 'none selected (using placeholder)';
+            renderComposite();
+        }
+    });
+
+})();
+</script>
+</body>
+</html>
