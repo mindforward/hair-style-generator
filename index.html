@@ -688,17 +688,58 @@ body {
     const b64=capturedDataUrl.split(',')[1];
 
     try{
-      // ---- Call backend API (Vercel serverless, no regional restrictions) ----
-      const resp=await fetch('/api/generate',{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({prompt, image:b64, apiKey:key})
-      });
-      const data=await resp.json();
-      if(!resp.ok) throw new Error(data.error||'Server error '+resp.status);
+      // ---- Try backend API first (Vercel), fallback to direct Google API (local) ----
+      let imgUrl=null;
 
-      // Backend returns {data: base64, mime_type: "image/png"}
-      const imgUrl='data:'+(data.mime_type||'image/png')+';base64,'+data.data;
+      // Try backend
+      try {
+        const resp=await fetch('/api/generate',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({prompt, image:b64, apiKey:key})
+        });
+        if(resp.ok){
+          const data=await resp.json();
+          imgUrl='data:'+(data.mime_type||'image/png')+';base64,'+data.data;
+        } else {
+          throw new Error('backend fail');
+        }
+      } catch(e) {
+        // Fallback: direct Google API call (for local file:// usage)
+        const body={
+          model:"gemini-3.1-flash-image",
+          input:[
+            {type:"text", text:prompt},
+            {type:"image", data:b64, mime_type:"image/jpeg"}
+          ]
+        };
+        const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{
+          method:'POST',
+          headers:{'x-goog-api-key':key, 'Content-Type':'application/json'},
+          body:JSON.stringify(body)
+        });
+        const data=await resp.json();
+        if(!resp.ok) throw new Error(data.error?.message||'Gemini error '+resp.status);
+
+        if(data.steps){
+          for(const step of data.steps){
+            if(step.type==='model_output' && step.content){
+              for(const item of step.content){
+                if(item.type==='image' && item.data){
+                  imgUrl='data:'+(item.mime_type||'image/png')+';base64,'+item.data;
+                  break;
+                }
+              }
+            }
+            if(imgUrl) break;
+          }
+        }
+        if(!imgUrl && data.output_image?.data){
+          imgUrl='data:'+(data.output_image.mime_type||'image/png')+';base64,'+data.output_image.data;
+        }
+      }
+
+      if(!imgUrl) throw new Error('Model did not return an image');
 
       generatedImageDataUrl=imgUrl;
       placeHolder.style.display='none';
