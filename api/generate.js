@@ -12,17 +12,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { prompt, image } = req.body;
+  const { prompt, image, apiKey } = req.body;
   if (!prompt || !image) {
     return res.status(400).json({ error: 'Missing prompt or image' });
   }
-
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY
-    || process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-  if (!GOOGLE_API_KEY) {
-    return res.status(500).json({
-      error: 'API key not configured on server. Ask the developer to set GOOGLE_API_KEY env var.',
-    });
+  if (!apiKey) {
+    return res.status(400).json({ error: 'Missing apiKey — set it in the ⚙️ settings on the page' });
   }
 
   try {
@@ -39,7 +34,7 @@ export default async function handler(req, res) {
       {
         method: 'POST',
         headers: {
-          'x-goog-api-key': GOOGLE_API_KEY,
+          'x-goog-api-key': apiKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),

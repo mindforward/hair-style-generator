@@ -677,6 +677,8 @@ body {
   let generatedImageDataUrl=null;
 
   generateBtn.addEventListener('click',async function(){
+    const key = window._apiKey || savedApiKey;
+    if(!key){ alert(txt('noKeyAlert')); return; }
     if(!capturedDataUrl){ alert('Please take a photo first'); goStep(2); return; }
 
     generateBtn.disabled=true; generateBtn.textContent='⏳ 生成中...';
@@ -690,7 +692,7 @@ body {
       const resp=await fetch('/api/generate',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({prompt, image:b64})
+        body:JSON.stringify({prompt, image:b64, apiKey:key})
       });
       const data=await resp.json();
       if(!resp.ok) throw new Error(data.error||'Server error '+resp.status);
