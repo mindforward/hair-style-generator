@@ -200,7 +200,65 @@ body {
 }
 .api-indicator.ok { background:#BAC40540; color:#5a7a00; }
 .api-indicator.missing { background:#fdd; color:#a33; }
-</style>
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .app-wrapper { padding:20px 16px 25px; border-radius:30px; }
+}
+@media (max-width: 768px) {
+  body { padding:10px; }
+  .app-wrapper { border-radius:24px; padding:16px 12px 20px; }
+  .steps { gap:6px; }
+  .step { font-size:0.8rem; padding:6px 14px; }
+  .header-bar { flex-direction:column; align-items:stretch; gap:10px; }
+  .logo-area { justify-content:center; flex-wrap:wrap; }
+  .logo-svg { height:50px; }
+  .logo-svg svg { height:50px; max-width:100px; }
+  .logo-area h1 { font-size:1.2rem; white-space:normal; }
+  .lang-toggle { justify-content:center; }
+  .lang-btn { font-size:0.9rem; padding:5px 14px; }
+  .pools-row { flex-direction:column; gap:12px; overflow-x:visible; padding:5px; }
+  .pool-card { min-width:0; max-width:100%; width:100%; padding:12px; }
+  .pool-title { font-size:1rem; }
+  .word-tag { font-size:0.85rem; padding:5px 14px; }
+  .pools-row .word-tag { cursor:pointer; }
+  .selected-section { padding:12px 14px; }
+  .section-title { font-size:1.1rem; }
+  .btn { font-size:0.9rem; padding:8px 18px; }
+  .btn-row, .btn-row-between { flex-direction:column; align-items:stretch; }
+  .btn-row button, .btn-row-between button { width:100%; }
+  .btn-row-between div { flex-direction:column; width:100%; }
+  .btn-row-between div button { width:100%; }
+  .camera-panel { padding:10px; }
+  #cameraPreview, #capturedPreview { max-width:100%; }
+  .camera-controls { flex-direction:column; align-items:stretch; }
+  .camera-controls button { width:100%; }
+  .prompt-box { font-size:0.85rem; padding:10px 14px; }
+  .result-area { padding:14px; }
+  .result-area img { max-height:300px; }
+  /* Print panel */
+  .print-panel > div { flex-direction:column !important; align-items:center !important; gap:1rem !important; }
+  .print-canvas-area { padding:0.8rem; display:block; width:100%; text-align:center; }
+  #printCanvas { width:200px; height:300px; }
+  /* Modal */
+  .modal-box { max-width:95%; padding:24px 20px; border-radius:28px; }
+  .modal-title { font-size:1.2rem; }
+  .modal-close { font-size:2rem; top:14px; right:16px; }
+  .modal-body input[type="password"] { font-size:0.9rem; }
+  /* Footer */
+  .footer-note { font-size:0.75rem; }
+}
+@media (max-width: 400px) {
+  .step { font-size:0.7rem; padding:4px 10px; }
+  .logo-svg { height:36px; }
+  .logo-svg svg { height:36px; max-width:80px; }
+  .logo-area h1 { font-size:1rem; }
+  .pool-card { padding:8px; border-radius:28px; }
+  .word-tag { font-size:0.78rem; padding:4px 12px; }
+  .btn { font-size:0.82rem; padding:7px 14px; }
+  .selected-section { padding:10px 12px; }
+  #printCanvas { width:160px; height:240px; }
+}</style>
 </head>
 <body>
 
@@ -366,7 +424,10 @@ body {
     </div>
   </div>
 
-  <div class="footer-note" id="footerNote">Designed and Developed by Fred Chung</div>
+  <div class="footer-note" id="footerNote">
+    Designed and Developed by Fred Chung
+    <span id="versionBadge" style="margin-left:8px;font-size:0.75em;background:#00ADEF20;padding:1px 10px;border-radius:30px;color:#717073;"></span>
+  </div>
 </div>
 
 <!-- Settings Modal -->
@@ -509,6 +570,17 @@ body {
     s.setAttribute('draggable','true'); s.setAttribute('data-value',text);
     s.addEventListener('dragstart',e=>{ e.dataTransfer.setData('text/plain',text); s.style.opacity='0.5'; });
     s.addEventListener('dragend',()=>{ s.style.opacity='1'; destDiv.classList.remove('drag-over'); });
+    // Click/tap to add (mobile-friendly)
+    s.addEventListener('click',()=>{
+      if(destDiv.children.length>=MAX_TAGS){
+        alert(currentLang==='eng'?'Max 5 tags.':'最多5個標籤');
+        return;
+      }
+      if(!Array.from(destDiv.children).some(t=>t.textContent===text)){
+        destDiv.appendChild(createDestTag(text));
+        updCount(); updPrompt();
+      }
+    });
     return s;
   }
   function createDestTag(text){
@@ -920,6 +992,15 @@ body {
   } catch(e) {}
   refreshPools(); updCount(); updPrompt();
   setLang('cht');
+
+  // ---- Fetch version badge ----
+  fetch('/api/version')
+    .then(r=>r.json())
+    .then(v=>{
+      const badge=document.getElementById('versionBadge');
+      if(badge) badge.textContent=v.commit+' @ '+new Date(v.deployedAt).toLocaleString('zh-HK',{hour12:false,timeZone:'Asia/Hong_Kong'});
+    })
+    .catch(()=>{}); // silently ignore on local
 })();
 </script>
 </body>
