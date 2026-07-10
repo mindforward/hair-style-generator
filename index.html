@@ -82,6 +82,12 @@ body {
   user-select:none; white-space:nowrap;
 }
 .word-tag:active { cursor:grabbing; transform:scale(0.96); box-shadow:0 1px 0 #FDB924; }
+.word-tag.selected {
+  background:#00ADEF20; border-color:#00ADEF;
+  box-shadow:0 0 0 1.5px #00ADEF, 0 2px 8px rgba(0,173,239,0.2);
+  color:#005f8a; opacity:0.85;
+}
+.word-tag.selected::before { content:"✓ "; font-weight:bold; color:#00ADEF; }
 .selected-section {
   margin:15px 0 10px; background:#FDB92420;
   border-radius:40px; padding:15px 25px; border:3px solid #00ADEF;
@@ -596,10 +602,17 @@ body {
       w[k].forEach(t=>srcEls[k].appendChild(createSrcTag(t)));
     }
   }
+  function updSrcTagStates(){
+    const selectedTexts=new Set(Array.from(destDiv.children).map(t=>t.textContent.trim()));
+    document.querySelectorAll('.pools-row .word-tag').forEach(el=>{
+      el.classList.toggle('selected', selectedTexts.has(el.textContent.trim()));
+    });
+  }
   function updCount(){
     const c=destDiv.children.length;
     document.getElementById('selectedCount').textContent=c;
     document.getElementById('maxWarning').textContent=c>=MAX_TAGS?(currentLang==='eng'?'Maximum 5 tags allowed (click ✕ to remove)':'最多選擇5個標籤（點擊✕移除）'):'';
+    updSrcTagStates();
   }
   function updPrompt(){
     const sel=Array.from(destDiv.children).map(t=>t.textContent.trim());
